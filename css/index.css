@@ -1,0 +1,29 @@
+@font-face {
+    font-family: "Frutiger";
+    src: url("../fonts/frutiger/frutiger-55-roman-webfont.woff") format("woff"),
+    url("../fonts/frutiger/frutiger-55-roman-webfont.woff2") format("opentype"),
+    url("../fonts/frutiger/frutiger.svg#filename") format("svg");
+    }
+
+body{
+    background-image: url('../img/Vagões-VLI.jpg');
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-position: center;
+    height: 100vh;
+
+}
+
+#login.card{
+    background: rgba(255, 255, 255, 0.9);
+}
+
+#login-text{
+    font-family: 'Frutiger', sans-serif;
+}
+
+.error{
+    color: red;
+    float: left;
+    font-size: 80%;
+}
