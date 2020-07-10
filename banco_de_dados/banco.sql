@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Tempo de geração: 10/07/2020 às 08:40
+-- Tempo de geração: 10/07/2020 às 08:43
 -- Versão do servidor: 5.7.23-23
 -- Versão do PHP: 7.3.6
 
@@ -339,6 +339,15 @@ CREATE TABLE `tabperfil` (
   `idperfil` int(11) NOT NULL,
   `nomeperfil` varchar(45) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+--
+-- Despejando dados para a tabela `tabperfil`
+--
+
+INSERT INTO `tabperfil` (`idperfil`, `nomeperfil`) VALUES
+(1, 'ADMINISTRADOR'),
+(3, 'SOLICITANTE'),
+(2, 'SUPERVISOR');
 
 -- --------------------------------------------------------
 
@@ -795,7 +804,7 @@ ALTER TABLE `tabpedidos_dia`
 -- AUTO_INCREMENT de tabela `tabperfil`
 --
 ALTER TABLE `tabperfil`
-  MODIFY `idperfil` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `idperfil` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT de tabela `tabprocesso`
