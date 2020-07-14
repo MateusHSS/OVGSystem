@@ -11,7 +11,16 @@
     $sql->execute();
 
     if($sql->affected_rows > 0){
-        echo json_encode(array("cod" => "1", "id" => $connect->insert_id));
+        $sqlInsereNoEstoque = $connect->prepare("INSERT INTO tabestoque (SAP_material, quantidade, KG) VALUES (?, 0, 0)");
+        $sqlInsereNoEstoque->bind_param("s", $SAP);
+        $sqlInsereNoEstoque->execute();
+
+        if($sqlInsereNoEstoque->affected_rows > 0){
+            echo json_encode(array("cod" => "1", "id" => $connect->insert_id));
+        }else{
+            echo json_encode(array("cod" => "0", "erro" => $connect->error));
+        }
+        
     }else{
         echo json_encode(array("cod" => "0", "erro" => $connect->error));
     }

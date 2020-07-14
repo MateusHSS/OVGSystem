@@ -10,7 +10,8 @@
 
     if($sqlInsereEstoque->affected_rows > 0){
 
-        $sqlRegistraMovimentacao = $connect->prepare("INSERT INTO tabmovimentacaoestoque (tipo_movimentacao, quantidade, KG) VALUES (1, $qtd, $peso)");
+        $sqlRegistraMovimentacao = $connect->prepare("INSERT INTO tabmovimentacaoestoque (SAP_material, tipo_movimentacao, quantidade, KG) VALUES (?, 1, ?, ?)");
+        $sqlRegistraMovimentacao->bind_param("sid", $sap, $qtd, $peso);
         $sqlRegistraMovimentacao->execute();
 
         if($sqlRegistraMovimentacao->affected_rows > 0){

@@ -62,6 +62,7 @@
                 $idMaterial = $resMateriais['idmaterial'];
                 $sapMaterial = $resMateriais['codigo_SAP'];
                 $peso = $resMateriais['peso_KG'];
+                $qtdMaterial = $resMateriais['quantidadematerial'];
                 
 
                 $sqlAtualizaEstoque = $connect->prepare("UPDATE tabestoque 
@@ -73,11 +74,13 @@
                 $sqlAtualizaEstoque->execute();
 
                 if($sqlAtualizaEstoque->affected_rows <= 0){
-
-                    $sqlRegistraMovimentacao = $connect->prepare("INSERT INTO tabmovimentacaoestoque (SAP_material, tipo_movimentacao, quantidade, data, KG) VALUES (?, 2, ?, NOW(), ?)");
                     echo json_encode(array("cod" => 0, "erro" =>$connect->error));
                     break;
                 }
+
+                $sqlRegistraMovimentacao = $connect->prepare("INSERT INTO tabmovimentacaoestoque (SAP_material, tipo_movimentacao, quantidade, data, KG) VALUES (?, 2, (? * ?), NOW(), (? * ?))");
+                $sqlRegistraMovimentacao->bind_param("siidi", $sapMaterial, $qtdMaterial, $qtdPedido, $peso, $qtdPedido);
+                $sqlRegistraMovimentacao->execute();
             }
 
             //INSERE O PEDIDO NA FILA DE PEDIDOS

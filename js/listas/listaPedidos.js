@@ -114,7 +114,7 @@ $(document).ready(function() {
                 $("#atividade_detalhes").text(retorno.nomeatividade);
                 $("#seguranca_detalhes").text(retorno.nomeseguranca);
                 if (retorno.formulariopedido != null) {
-                    $("#form_detalhes").html("<a href='../formulariosPedidos/" + retorno
+                    $("#form_detalhes").html("<a target='_blank' href='../formulariosPedidos/" + retorno
                         .formulariopedido + "'>Acessar</a></p>");
                 } else {
                     $("#form_detalhes").text("Não anexado");

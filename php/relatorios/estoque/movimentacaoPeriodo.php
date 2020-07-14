@@ -1,9 +1,13 @@
 <?php
     error_reporting(E_ALL);
     ini_set('display_errors', 'On');
-    require_once "../classes/fpdf182/fpdf.php";
-    require_once "buscaDados/dados.php";
-    require_once "../classes/codifica_utf8.php";
+
+    $inicio = $_POST['inicio'];
+    $fim = $_POST['fim'];
+
+    require_once "../../classes/fpdf182/fpdf.php";
+    require_once "../buscaDados/dados.php";
+    require_once "../../classes/codifica_utf8.php";
 
     $dados = new Estoque();
 
@@ -11,13 +15,13 @@
 
     //INSTANCIA O PDF
     $pdf = new FPDF("P");
-    $pdf->setTitle("Relatório 1", 1);
+    $pdf->setTitle("Movimentação por período", 1);
 
     //INICIALIZA O PDF COM A PRIMEIRA PAGINA
     $pdf->AddPage();
 
     //DEFINE O NOME DO ARQUIVO
-    $arquivo = "relatorio_1.pdf";
+    $arquivo = "movim_".$inicio."_".$fim.".pdf";
 
     $fonte = "Arial";
     $style = "B";
@@ -25,14 +29,22 @@
     $alinhaC = "C";
     $alinhaL = "L";
 
-    $pdf->Image('../../img/logo_fundo_branco.png', 10, 0, 30);
+    $pdf->Image('../../../img/logo_fundo_branco.png', 10, 0, 30);
     $pdf->Ln(40);
     $pdf->SetFont('Arial', 'B', 20);
     $pdf->Text(45, 15, $codifica->tratarCaracter("MOVIMENTAÇÃO DO ESTOQUE", 1));
     $pdf->Ln(10);
     $pdf->SetFont('Arial', '', 10);
     $pdf->Text(95, 20, $codifica->tratarCaracter("OVGSystem", 1));
+    
+    $pdf->Ln(10);
 
+    //DADOS DO RELATORIO
+    $pdf->SetFont('Arial', 'B', 15);
+    $pdf->Text(10, 40, $codifica->tratarCaracter("Período: ", 1));
+    $pdf->SetFont('Arial', '', 15);
+    $pdf->Text(32, 40, $codifica->tratarCaracter($inicio." - ". $fim, 1));
+    $pdf->SetY(50);
 
     $pdf->SetFont('Arial', 'B', 12);
     $pdf->Cell(30, 12, "Data e hora", 1, 0, "C");
@@ -46,7 +58,7 @@
     $pdf->Cell(15, 12, "Kg", 1, 0, "C");
     $pdf->Cell(20, 12, $codifica->tratarCaracter("Movim.", 1), 1, 1, "C");
 
-    foreach($dados->movimentacao() as $result){
+    foreach($dados->movimentacao_periodo($inicio, $fim) as $result){
         $pdf->SetFont($fonte, '', 7);
         $pdf->Cell(30, 5, $result['data'], $border, 0, $alinhaC);
         $pdf->Cell(10, 5, $result['idmaterial'], $border, 0, $alinhaC);

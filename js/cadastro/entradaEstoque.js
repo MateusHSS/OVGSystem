@@ -1,3 +1,6 @@
+$('.dropdown-trigger').dropdown({
+    container: document.body
+});
 $(document).ready(function(){
 
     $("#material").keyup(function(){

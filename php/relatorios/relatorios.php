@@ -42,7 +42,7 @@
 
     <!-- CSS DA PAGINA -->
 
-    <link rel="stylesheet" href="../css/home.css">
+    <link rel="stylesheet" href="../../css/relatorios.css">
 
     <!-- Compiled and minified JavaScript -->
 
@@ -109,9 +109,9 @@
             <!-- MENU RELATORIOS -->
 
             <ul id="relatorio-menu" class="dropdown-content">
-                <li><a href='relatorios/relatoriosEstoque.php'>Estoque</a></li>
-                <li><a href='relatorios/relatoriosProducao.php'>Produção</a></li>
-                <li><a href='relatorios/relatoriosPedidos.php'>Opcao 3</a></li>
+                <li><a href='relatorios/relatorio1.php' target="_blank">Estoque</a></li>
+                <li><a href='#'>Produção</a></li>
+                <li><a href='#'>Opcao 3</a></li>
             </ul>
 
             <!-- MENU PEDIDOS -->
@@ -144,7 +144,8 @@
                     <li class="tab"><a class="dropdown-trigger active" data-target="pedido-menu">PEDIDO<i
                                 class='material-icons right'>arrow_drop_down</i></a></li>
 
-                    <li class="tab"><a class="active" href="relatorios/relatorios.php">RELATÓRIOS</a></li>
+                    <li class="tab"><a class="dropdown-trigger active" data-target="relatorio-menu">RELATÓRIOS<i
+                                class='material-icons right'>arrow_drop_down</i></a></li>
 
                     <li class="tab"><a class="dropdown-trigger active" data-target="programacao-menu">PROGRAMAÇÃO<i
                                 class='material-icons right'>arrow_drop_down</i></a></li>
@@ -271,160 +272,130 @@
 
     <main>
 
-        <div id="conteudo">
-
-            <div id='dale123'>
-
-                <div class="container">
-
-                    <div class="section">
-
-
-
-                        <!--   Icon Section   -->
-
-                        <div class="row">
-
-                            <div class="col s12 m4">
-
-                                <div class="card">
-
-                                    <div class="card-image waves-effect waves-block waves-light">
-
-                                        <img class="activator" src="../img/solda4.png">
-
-                                    </div>
-
-                                    <div class="card-content">
-
-                                        <span class="card-title activator grey-text text-darken-4">Grupo de peças<i
-                                                class="material-icons right">more_vert</i></span>
-
-                                    </div>
-
-                                    <div class="card-reveal">
-
-                                        <span class="card-title grey-text text-darken-4">Quem somos?<i
-                                                class="material-icons right">close</i></span>
-
-                                        <p>
-
-                                            O Grupo de peças é uma área de caldeiraria pertencente a Gerência de
-                                            Manutenção de Vagões Centro Leste responsável pela confecção, corte,
-                                            manutenção, elaboração e reparos com soldas em instrumentos metálicos.
-                                            Produzem peças destinadas a manutenção de Vagões e confecção de projetos
-                                            conforme a necessidade de cada cliente.
-
-                                        </p>
-
-                                    </div>
-
-                                </div>
-
-                            </div>
-
-
-
-                            <div class="col s12 m4">
-
-                                <div class="card">
-
-                                    <div class="card-image waves-effect waves-block waves-light">
-
-                                        <img class="activator" src="../img/vagoes2.png">
-
-                                    </div>
-
-                                    <div class="card-content">
-
-                                        <span class="card-title activator grey-text text-darken-4">Vagões<i
-                                                class="material-icons right">more_vert</i></span>
-
-                                    </div>
-
-                                    <div class="card-reveal">
-
-                                        <span class="card-title grey-text text-darken-4">Vagões CL<i
-                                                class="material-icons right">close</i></span>
-
-                                        <p>
-
-                                            A Gerência de Manutenção de Vagões é uma área responsável pelas manutenções
-                                            preventivas e corretivas em vagões tanque, graneleiros, gôndolas e
-                                            plataformas. A Gerência é composta por 114 funcionários própios que estão
-                                            distribuídos entre as localidades de Divinópolis, Araguari, Pedro Leopoldo,
-                                            Imbiruçu e Garças.
-
-                                        </p>
-
-                                    </div>
-
-                                </div>
-
-                            </div>
-
-                            <div class="col s12 m4">
-
-                                <div class="card">
-
-                                    <div class="card-image waves-effect waves-block waves-light">
-
-                                        <img class="activator" src="../img/vli.png">
-
-                                    </div>
-
-                                    <div class="card-content">
-
-                                        <span class="card-title activator grey-text text-darken-4">A VLI<i
-                                                class="material-icons right">more_vert</i></span>
-
-                                    </div>
-
-                                    <div class="card-reveal">
-
-                                        <span class="card-title grey-text text-darken-4">VLI<i
-                                                class="material-icons right">close</i></span>
-
-                                        <p>
-
-                                            A VLI é uma empresa que oferece soluções logísticas que integram portos,
-
-                                            ferrovias e terminais,
-
-                                            com capacidade para atender com cada vez mais eficiência.
-
-                                        </p>
-
-                                    </div>
-
-                                </div>
-
-                            </div>
-
-                        </div>
-
-
-
-                    </div>
-
-                    <br><br>
-
+        <div class="row">
+            <div class="col l2"></div>
+            <div class="col l8">
+                <div class="row center">
+                    <h4>Relatórios</h4>
                 </div>
-
+                <div class="row">
+                    <div class="col l6">
+                        <ul class="collection with-header">
+                            <li class="collection-header">
+                                <h4>Estoque</h4>
+                            </li>
+                            <li class="collection-item">
+                                <div>Totais data atual<a href="estoque/totaisDataAtual.php" target="_blank" class="secondary-content"><i
+                                            class="material-icons">open_in_browser</i></a></div>
+                            </li>
+                            <li class="collection-item">
+                                <div>Movimentação por período<a data-target="periodo_movimentacao"
+                                        class="secondary-content modal-trigger"><i
+                                            class="material-icons">open_in_browser</i></a></div>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="col l6">
+                        <ul class="collection with-header">
+                            <li class="collection-header">
+                                <h4>Produção</h4>
+                            </li>
+                            <li class="collection-item">
+                                <div>Entrega de pedidos<a data-target="periodo_entrega_pedidos" class="secondary-content modal-trigger"><i
+                                            class="material-icons">open_in_browser</i></a></div>
+                            </li>
+                            <li class="collection-item">
+                                <div>Pedidos realizados por período<a data-target="pedidos_dia" class="secondary-content"><i
+                                            class="material-icons">open_in_browser</i></a></div>
+                            </li>
+                            <li class="collection-item">
+                                <div>Pedidos realizados por dia<a data-target="pedidos_dia" class="secondary-content modal-trigger"><i
+                                            class="material-icons">open_in_browser</i></a></div>
+                            </li>
+                            <li class="collection-item">
+                                <div>Materiais gastos por pedido<a href="#!" class="secondary-content"><i
+                                            class="material-icons">open_in_browser</i></a></div>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
             </div>
-
+            <div class="col l2"></div>
         </div>
 
+        <!-- Modal Structure -->
+        <div id="periodo_movimentacao" class="modal">
+            <div class="modal-content">
+                <h4>Selecionar período</h4>
+                <div class="row">
+                    <form action="estoque/movimentacaoPeriodo.php" method="post" target="_blank">
+                        <div class="row">
+                            <div class="input-field col l6">
+                                <input placeholder="dd/mm/aaaa" id="inicio" type="text" class="datepicker"
+                                    name="inicio">
+                                <label for="inicio">Início</label>
+                            </div>
+                            <div class="input-field col l6">
+                                <input placeholder="dd/mm/aaaa" id="fim" type="text" class="datepicker"
+                                    name="fim">
+                                <label for="fim">Fim</label>
+                            </div>
+                        </div>
+                        <div class="row center">
+                            <button type="submit" class="btn">Gerar<i class="material-icons right">print</i></button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal Structure -->
+        <div id="periodo_entrega_pedidos" class="modal">
+            <div class="modal-content">
+                <h4>Selecionar período</h4>
+                <div class="row">
+                    <form action="producao/pedidosEntregues.php" method="post" target="_blank">
+                        <div class="row">
+                            <div class="input-field col l6">
+                                <input placeholder="dd/mm/aaaa" id="inicio" type="text" class="datepicker"
+                                    name="inicio">
+                                <label for="inicio">Início</label>
+                            </div>
+                            <div class="input-field col l6">
+                                <input placeholder="dd/mm/aaaa" id="fim" type="text" class="datepicker"
+                                    name="fim">
+                                <label for="fim">Fim</label>
+                            </div>
+                        </div>
+                        <div class="row center">
+                            <button type="submit" class="btn">Gerar<i class="material-icons right">print</i></button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal Structure -->
+        <div id="pedidos_dia" class="modal">
+            <div class="modal-content">
+                <h4>Data</h4>
+                <div class="row">
+                    <form action="producao/pedidosDia.php" method="post" target="_blank">
+                        <div class="row">
+                            <div class="input-field col l12">
+                                <input placeholder="dd/mm/aaaa" id="data" type="text" class="datepicker"
+                                    name="data">
+                                <label for="data">Data</label>
+                            </div>
+                        </div>
+                        <div class="row center">
+                            <button type="submit" class="btn">Gerar<i class="material-icons right">print</i></button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
     </main>
-
-
-
-
-
-
-
-
-
 
 
     <!--JavaScript at end of body for optimized loading-->
@@ -435,20 +406,7 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.mask/1.14.16/jquery.mask.js"
         integrity="sha256-yE5LLp5HSQ/z+hJeCqkz9hdjNkk1jaiGG0tDCraumnA=" crossorigin="anonymous"></script>
-
-    <script type='text/javascript'>
-    $('.dropdown-trigger').dropdown({
-
-        container: document.body
-
-    });
-
-
-
-    $(document).ready(function() {
-
-    })
-    </script>
+    <script src="../../js/relatorios/relatorios.js"></script>
 </body>
 
 </html>
