@@ -35,7 +35,6 @@ $(document).ready(function() {
             })
 
             $(".exclui").click(function() {
-
                 $.ajax({
                     url: "../controller/select/dadosPedido.php",
                     type: "POST",
