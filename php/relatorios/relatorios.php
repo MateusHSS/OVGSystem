@@ -316,6 +316,26 @@
                         </ul>
                     </div>
                     <div class="col l10 card">
+                        <div class="row" id="filtro-periodos">
+                            <p>
+                            <label>
+                                <input class="with-gap" name="periodo" id="per-semana" type="radio" data-dias="7" />
+                                <span>Semanal (7 dias)</span>
+                            </label>
+                            <label>
+                                <input class="with-gap" name="periodo" id="per-mes" type="radio" data-dias="30" />
+                                <span>Mensal (30 dias)</span>
+                            </label>
+                            <label>
+                                <input class="with-gap" name="periodo" id="per-semestre" type="radio" data-dias="180" />
+                                <span>Semestral (180 dias)</span>
+                            </label>
+                            <label>
+                                <input class="with-gap" name="periodo" id="per-ano" type="radio" data-dias="365" checked />
+                                <span>Anual (365 dias)</span>
+                            </label>
+                            </p>
+                        </div>
                         <!--Div that will hold the pie chart-->
                         <div id="chart_div" style="width: 900px; height: 400px;"></div>
                     </div>
@@ -431,11 +451,14 @@
         integrity="sha256-yE5LLp5HSQ/z+hJeCqkz9hdjNkk1jaiGG0tDCraumnA=" crossorigin="anonymous"></script>
     <script src="../../js/relatorios/relatorios.js"></script>
     <script>
+        $(document).ready(function(){
+            $("#filtro-periodos").hide();
+        })
         google.charts.load('current', {'packages':['corechart']});
 
         $('#grafico1').click(function(){
             // Some raw data (not necessarily accurate)
-            var data = google.visualization.arrayToDataTable([
+            var dataAnual = google.visualization.arrayToDataTable([
             ['Dale', 'Pedidos', {type: 'number', role: 'annotation'}, 'Peças', {type: 'number', role: 'annotation'}],
             <?php
                 include_once "../config/conexao.php";
@@ -473,7 +496,7 @@
             ['Gap',  <?php echo $diferencaPedidos ?>, <?php echo $diferencaPedidos ?>, <?php echo $diferencaPecas ?>, <?php echo $diferencaPecas ?>]
             ]);
 
-            var options = {
+            var optionsAnual = {
             title : 'Atividade grupo de pecas (últimos 365 dias)',
             annotations: {
                 alwaysOutside: true,
@@ -487,33 +510,150 @@
             seriesType: 'bars',
             series: {5: {type: 'line'}}        };
 
-            var chart = new google.visualization.ComboChart(document.getElementById('chart_div'));
-            google.visualization.events.addListener(chart, 'click', function () {
-                var imgUri = chart.getImageURI();
-                // do something with the image URI, like:
-                window.open(imgUri);
-            });
-            chart.draw(data, options);
-        });
-
-        $('#grafico2').click(function(){
-            // Some raw data (not necessarily accurate)
-            var data = google.visualization.arrayToDataTable([
-            ['Pedidos', 'Tempo médio (dias)', {type: 'number', role: 'annotation'}, { role: 'style' }],
+            var dataSemestral = google.visualization.arrayToDataTable([
+            ['Dale', 'Pedidos', {type: 'number', role: 'annotation'}, 'Peças', {type: 'number', role: 'annotation'}],
             <?php
                 include_once "../config/conexao.php";
 
-                $sqlSelecionaPeriodo = $connect->prepare("SELECT count(*) AS total, SUM(datediff(tabpedido.final_real, tabpedido.datainclusao)) AS tempo FROM tabpedido WHERE tabpedido.final_real IS NOT null AND tabpedido.final_real BETWEEN DATE_ADD(CURRENT_DATE(), INTERVAL -30 DAY) AND CURRENT_DATE()");
-                $sqlSelecionaPeriodo->execute();
-                $resultPeriodo = $sqlSelecionaPeriodo->get_result();
-                $resPeriodo = $resultPeriodo->fetch_assoc();
-                $media = intval($resPeriodo['tempo']/$resPeriodo['total']);
+                //PEDIDOS ENTREGUES
+                $sqlSelecionaPedidosEntregues = $connect->prepare("SELECT COUNT(*) AS entregues FROM tabpedido WHERE final_real BETWEEN DATE_ADD(CURRENT_DATE(), INTERVAL -180 DAY) AND CURRENT_DATE()");
+                $sqlSelecionaPedidosEntregues->execute();
+                $resultPedidosEntregues = $sqlSelecionaPedidosEntregues->get_result();
+                $resPedidosEntregues = $resultPedidosEntregues->fetch_assoc();
+
+                //PECAS ENTREGUES
+                $sqlSelecionaPecasEntregues = $connect->prepare("SELECT SUM(tabpedido.quantidadepedido) AS pecas_entregues FROM tabpedido WHERE final_real BETWEEN DATE_ADD(CURRENT_DATE(), INTERVAL -180 DAY) AND CURRENT_DATE()");
+                $sqlSelecionaPecasEntregues->execute();
+                $resultPecasEntregues = $sqlSelecionaPecasEntregues->get_result();
+                $resPecasEntregues = $resultPecasEntregues->fetch_assoc();
+
+                //PEDIDOS PREVISTOS
+                $sqlSelecionaPedidosPrevistos = $connect->prepare("SELECT COUNT(*) AS previstos FROM tabpedido WHERE previsao BETWEEN DATE_ADD(CURRENT_DATE(), INTERVAL -180 DAY) AND CURRENT_DATE()");
+                $sqlSelecionaPedidosPrevistos->execute();
+                $resultPedidosPrevistos = $sqlSelecionaPedidosPrevistos->get_result();
+                $resPedidosPrevistos = $resultPedidosPrevistos->fetch_assoc();
+
+                //PECAS PREVISTAS
+                $sqlSelecionaPecasPrevistas = $connect->prepare("SELECT SUM(tabpedido.quantidadepedido) AS pecas_previstas FROM tabpedido WHERE previsao BETWEEN DATE_ADD(CURRENT_DATE(), INTERVAL -180 DAY) AND CURRENT_DATE()");
+                $sqlSelecionaPecasPrevistas->execute();
+                $resultPecasPrevistas = $sqlSelecionaPecasPrevistas->get_result();
+                $resPecasPrevistas = $resultPecasPrevistas->fetch_assoc();
+                
+                //DIFERENCAS
+                $diferencaPedidos = intval($resPedidosPrevistos['previstos']) - intval($resPedidosEntregues['entregues']);
+                $diferencaPecas = intval($resPecasPrevistas['pecas_previstas']) - intval($resPecasEntregues['pecas_entregues']);
             ?>
-            ['Dias',  <?php echo $media ?>,  <?php echo $media ?>, 'blue'],
+            ['Programado',  <?php echo $resPedidosPrevistos['previstos'] ?>, <?php echo $resPedidosPrevistos['previstos'] ?>, <?php echo $resPecasPrevistas['pecas_previstas'] ?>, <?php echo $resPecasPrevistas['pecas_previstas'] ?>],
+            ['Real',  <?php echo $resPedidosEntregues['entregues'] ?>, <?php echo $resPedidosEntregues['entregues'] ?>, <?php echo $resPecasEntregues['pecas_entregues'] ?>, <?php echo $resPecasEntregues['pecas_entregues'] ?>],
+            ['Gap',  <?php echo $diferencaPedidos ?>, <?php echo $diferencaPedidos ?>, <?php echo $diferencaPecas ?>, <?php echo $diferencaPecas ?>]
             ]);
 
-            var options = {
-            title : 'Tempo médio gasto por pedido (últimos 30 dias)',
+            var optionsSemestral = {
+            title : 'Atividade grupo de pecas (últimos 180 dias)',
+            annotations: {
+                alwaysOutside: true,
+                textStyle: {
+                    fontSize: 14,
+                    color: 'black',
+                    auraColor: 'none'
+                }
+            },
+            vAxis: {title: 'Quantidade'},
+            seriesType: 'bars',
+            series: {5: {type: 'line'}}        };
+
+            var dataMensal = google.visualization.arrayToDataTable([
+            ['Dale', 'Pedidos', {type: 'number', role: 'annotation'}, 'Peças', {type: 'number', role: 'annotation'}],
+            <?php
+                include_once "../config/conexao.php";
+
+                //PEDIDOS ENTREGUES
+                $sqlSelecionaPedidosEntregues = $connect->prepare("SELECT COUNT(*) AS entregues FROM tabpedido WHERE final_real BETWEEN DATE_ADD(CURRENT_DATE(), INTERVAL -30 DAY) AND CURRENT_DATE()");
+                $sqlSelecionaPedidosEntregues->execute();
+                $resultPedidosEntregues = $sqlSelecionaPedidosEntregues->get_result();
+                $resPedidosEntregues = $resultPedidosEntregues->fetch_assoc();
+
+                //PECAS ENTREGUES
+                $sqlSelecionaPecasEntregues = $connect->prepare("SELECT SUM(tabpedido.quantidadepedido) AS pecas_entregues FROM tabpedido WHERE final_real BETWEEN DATE_ADD(CURRENT_DATE(), INTERVAL -30 DAY) AND CURRENT_DATE()");
+                $sqlSelecionaPecasEntregues->execute();
+                $resultPecasEntregues = $sqlSelecionaPecasEntregues->get_result();
+                $resPecasEntregues = $resultPecasEntregues->fetch_assoc();
+
+                //PEDIDOS PREVISTOS
+                $sqlSelecionaPedidosPrevistos = $connect->prepare("SELECT COUNT(*) AS previstos FROM tabpedido WHERE previsao BETWEEN DATE_ADD(CURRENT_DATE(), INTERVAL -30 DAY) AND CURRENT_DATE()");
+                $sqlSelecionaPedidosPrevistos->execute();
+                $resultPedidosPrevistos = $sqlSelecionaPedidosPrevistos->get_result();
+                $resPedidosPrevistos = $resultPedidosPrevistos->fetch_assoc();
+
+                //PECAS PREVISTAS
+                $sqlSelecionaPecasPrevistas = $connect->prepare("SELECT SUM(tabpedido.quantidadepedido) AS pecas_previstas FROM tabpedido WHERE previsao BETWEEN DATE_ADD(CURRENT_DATE(), INTERVAL -30 DAY) AND CURRENT_DATE()");
+                $sqlSelecionaPecasPrevistas->execute();
+                $resultPecasPrevistas = $sqlSelecionaPecasPrevistas->get_result();
+                $resPecasPrevistas = $resultPecasPrevistas->fetch_assoc();
+                
+                //DIFERENCAS
+                $diferencaPedidos = intval($resPedidosPrevistos['previstos']) - intval($resPedidosEntregues['entregues']);
+                $diferencaPecas = intval($resPecasPrevistas['pecas_previstas']) - intval($resPecasEntregues['pecas_entregues']);
+            ?>
+            ['Programado',  <?php echo $resPedidosPrevistos['previstos'] ?>, <?php echo $resPedidosPrevistos['previstos'] ?>, <?php echo $resPecasPrevistas['pecas_previstas'] ?>, <?php echo $resPecasPrevistas['pecas_previstas'] ?>],
+            ['Real',  <?php echo $resPedidosEntregues['entregues'] ?>, <?php echo $resPedidosEntregues['entregues'] ?>, <?php echo $resPecasEntregues['pecas_entregues'] ?>, <?php echo $resPecasEntregues['pecas_entregues'] ?>],
+            ['Gap',  <?php echo $diferencaPedidos ?>, <?php echo $diferencaPedidos ?>, <?php echo $diferencaPecas ?>, <?php echo $diferencaPecas ?>]
+            ]);
+
+            var optionsMensal = {
+            title : 'Atividade grupo de pecas (últimos 30 dias)',
+            annotations: {
+                alwaysOutside: true,
+                textStyle: {
+                    fontSize: 14,
+                    color: 'black',
+                    auraColor: 'none'
+                }
+            },
+            vAxis: {title: 'Quantidade'},
+            seriesType: 'bars',
+            series: {5: {type: 'line'}}        };
+
+            var dataSemanal = google.visualization.arrayToDataTable([
+            ['Dale', 'Pedidos', {type: 'number', role: 'annotation'}, 'Peças', {type: 'number', role: 'annotation'}],
+            <?php
+                include_once "../config/conexao.php";
+
+                //PEDIDOS ENTREGUES
+                $sqlSelecionaPedidosEntregues = $connect->prepare("SELECT COUNT(*) AS entregues FROM tabpedido WHERE final_real BETWEEN DATE_ADD(CURRENT_DATE(), INTERVAL -7 DAY) AND CURRENT_DATE()");
+                $sqlSelecionaPedidosEntregues->execute();
+                $resultPedidosEntregues = $sqlSelecionaPedidosEntregues->get_result();
+                $resPedidosEntregues = $resultPedidosEntregues->fetch_assoc();
+
+                //PECAS ENTREGUES
+                $sqlSelecionaPecasEntregues = $connect->prepare("SELECT SUM(tabpedido.quantidadepedido) AS pecas_entregues FROM tabpedido WHERE final_real BETWEEN DATE_ADD(CURRENT_DATE(), INTERVAL -7 DAY) AND CURRENT_DATE()");
+                $sqlSelecionaPecasEntregues->execute();
+                $resultPecasEntregues = $sqlSelecionaPecasEntregues->get_result();
+                $resPecasEntregues = $resultPecasEntregues->fetch_assoc();
+
+                //PEDIDOS PREVISTOS
+                $sqlSelecionaPedidosPrevistos = $connect->prepare("SELECT COUNT(*) AS previstos FROM tabpedido WHERE previsao BETWEEN DATE_ADD(CURRENT_DATE(), INTERVAL -7 DAY) AND CURRENT_DATE()");
+                $sqlSelecionaPedidosPrevistos->execute();
+                $resultPedidosPrevistos = $sqlSelecionaPedidosPrevistos->get_result();
+                $resPedidosPrevistos = $resultPedidosPrevistos->fetch_assoc();
+
+                //PECAS PREVISTAS
+                $sqlSelecionaPecasPrevistas = $connect->prepare("SELECT SUM(tabpedido.quantidadepedido) AS pecas_previstas FROM tabpedido WHERE previsao BETWEEN DATE_ADD(CURRENT_DATE(), INTERVAL -7 DAY) AND CURRENT_DATE()");
+                $sqlSelecionaPecasPrevistas->execute();
+                $resultPecasPrevistas = $sqlSelecionaPecasPrevistas->get_result();
+                $resPecasPrevistas = $resultPecasPrevistas->fetch_assoc();
+                
+                //DIFERENCAS
+                $diferencaPedidos = intval($resPedidosPrevistos['previstos']) - intval($resPedidosEntregues['entregues']);
+                $diferencaPecas = intval($resPecasPrevistas['pecas_previstas']) - intval($resPecasEntregues['pecas_entregues']);
+            ?>
+            ['Programado',  <?php echo $resPedidosPrevistos['previstos'] ?>, <?php echo $resPedidosPrevistos['previstos'] ?>, <?php echo $resPecasPrevistas['pecas_previstas'] ?>, <?php echo $resPecasPrevistas['pecas_previstas'] ?>],
+            ['Real',  <?php echo $resPedidosEntregues['entregues'] ?>, <?php echo $resPedidosEntregues['entregues'] ?>, <?php echo $resPecasEntregues['pecas_entregues'] ?>, <?php echo $resPecasEntregues['pecas_entregues'] ?>],
+            ['Gap',  <?php echo $diferencaPedidos ?>, <?php echo $diferencaPedidos ?>, <?php echo $diferencaPecas ?>, <?php echo $diferencaPecas ?>]
+            ]);
+
+            var optionsSemanal = {
+            title : 'Atividade grupo de pecas (últimos 7 dias)',
             annotations: {
                 alwaysOutside: true,
                 textStyle: {
@@ -532,7 +672,170 @@
                 // do something with the image URI, like:
                 window.open(imgUri);
             });
-            chart.draw(data, options);
+            chart.draw(dataAnual, optionsAnual);
+            $("#per-ano").attr('checked', 'checked');
+            $("#per-ano").change();
+            $("#filtro-periodos").show();
+
+            $('input[name="periodo"]').on('change', function(){
+                switch($('input[name="periodo"]:checked').attr("data-dias")){
+                    case '7':
+                        chart.draw(dataSemanal, optionsSemanal);
+                        break;
+                    case '30':
+                        chart.draw(dataMensal, optionsMensal);
+                        break;
+                    case '180':
+                        chart.draw(dataSemestral, optionsSemestral);
+                        break;
+                    case '365':
+                        chart.draw(dataAnual, optionsAnual);
+                        break;
+                }
+            });
+        });
+
+        $('#grafico2').click(function(){
+            // Some raw data (not necessarily accurate)
+            var dataSemanal = google.visualization.arrayToDataTable([
+            ['Pedidos', 'Tempo médio (dias)', {type: 'number', role: 'annotation'}, { role: 'style' }],
+            <?php
+                include_once "../config/conexao.php";
+
+                $sqlSelecionaPeriodo = $connect->prepare("SELECT count(*) AS total, SUM(datediff(tabpedido.final_real, tabpedido.datainclusao)) AS tempo FROM tabpedido WHERE tabpedido.final_real IS NOT null AND tabpedido.final_real BETWEEN DATE_ADD(CURRENT_DATE(), INTERVAL -7 DAY) AND CURRENT_DATE()");
+                $sqlSelecionaPeriodo->execute();
+                $resultPeriodo = $sqlSelecionaPeriodo->get_result();
+                $resPeriodo = $resultPeriodo->fetch_assoc();
+                $media = intval($resPeriodo['tempo']/$resPeriodo['total']);
+            ?>
+            ['Dias',  <?php echo $media ?>,  <?php echo $media ?>, 'blue'],
+            ]);
+
+            var optionsSemanal = {
+            title : 'Tempo médio gasto por pedido (últimos 7 dias)',
+            annotations: {
+                alwaysOutside: true,
+                textStyle: {
+                    fontSize: 14,
+                    color: 'black',
+                    auraColor: 'none'
+                }
+            },
+            vAxis: {title: 'Quantidade'},
+            seriesType: 'bars',
+            series: {5: {type: 'line'}}        };
+
+            var dataMensal = google.visualization.arrayToDataTable([
+            ['Pedidos', 'Tempo médio (dias)', {type: 'number', role: 'annotation'}, { role: 'style' }],
+            <?php
+                include_once "../config/conexao.php";
+
+                $sqlSelecionaPeriodo = $connect->prepare("SELECT count(*) AS total, SUM(datediff(tabpedido.final_real, tabpedido.datainclusao)) AS tempo FROM tabpedido WHERE tabpedido.final_real IS NOT null AND tabpedido.final_real BETWEEN DATE_ADD(CURRENT_DATE(), INTERVAL -30 DAY) AND CURRENT_DATE()");
+                $sqlSelecionaPeriodo->execute();
+                $resultPeriodo = $sqlSelecionaPeriodo->get_result();
+                $resPeriodo = $resultPeriodo->fetch_assoc();
+                $media = intval($resPeriodo['tempo']/$resPeriodo['total']);
+            ?>
+            ['Dias',  <?php echo $media ?>,  <?php echo $media ?>, 'blue'],
+            ]);
+
+            var optionsMensal = {
+            title : 'Tempo médio gasto por pedido (últimos 30 dias)',
+            annotations: {
+                alwaysOutside: true,
+                textStyle: {
+                    fontSize: 14,
+                    color: 'black',
+                    auraColor: 'none'
+                }
+            },
+            vAxis: {title: 'Quantidade'},
+            seriesType: 'bars',
+            series: {5: {type: 'line'}}        };
+
+            var dataSemestral = google.visualization.arrayToDataTable([
+            ['Pedidos', 'Tempo médio (dias)', {type: 'number', role: 'annotation'}, { role: 'style' }],
+            <?php
+                include_once "../config/conexao.php";
+
+                $sqlSelecionaPeriodo = $connect->prepare("SELECT count(*) AS total, SUM(datediff(tabpedido.final_real, tabpedido.datainclusao)) AS tempo FROM tabpedido WHERE tabpedido.final_real IS NOT null AND tabpedido.final_real BETWEEN DATE_ADD(CURRENT_DATE(), INTERVAL -180 DAY) AND CURRENT_DATE()");
+                $sqlSelecionaPeriodo->execute();
+                $resultPeriodo = $sqlSelecionaPeriodo->get_result();
+                $resPeriodo = $resultPeriodo->fetch_assoc();
+                $media = intval($resPeriodo['tempo']/$resPeriodo['total']);
+            ?>
+            ['Dias',  <?php echo $media ?>,  <?php echo $media ?>, 'blue'],
+            ]);
+
+            var optionsSemestral = {
+            title : 'Tempo médio gasto por pedido (últimos 180 dias)',
+            annotations: {
+                alwaysOutside: true,
+                textStyle: {
+                    fontSize: 14,
+                    color: 'black',
+                    auraColor: 'none'
+                }
+            },
+            vAxis: {title: 'Quantidade'},
+            seriesType: 'bars',
+            series: {5: {type: 'line'}}        };
+
+            var dataAnual = google.visualization.arrayToDataTable([
+            ['Pedidos', 'Tempo médio (dias)', {type: 'number', role: 'annotation'}, { role: 'style' }],
+            <?php
+                include_once "../config/conexao.php";
+
+                $sqlSelecionaPeriodo = $connect->prepare("SELECT count(*) AS total, SUM(datediff(tabpedido.final_real, tabpedido.datainclusao)) AS tempo FROM tabpedido WHERE tabpedido.final_real IS NOT null AND tabpedido.final_real BETWEEN DATE_ADD(CURRENT_DATE(), INTERVAL -365 DAY) AND CURRENT_DATE()");
+                $sqlSelecionaPeriodo->execute();
+                $resultPeriodo = $sqlSelecionaPeriodo->get_result();
+                $resPeriodo = $resultPeriodo->fetch_assoc();
+                $media = intval($resPeriodo['tempo']/$resPeriodo['total']);
+            ?>
+            ['Dias',  <?php echo $media ?>,  <?php echo $media ?>, 'blue'],
+            ]);
+
+            var optionsAnual = {
+            title : 'Tempo médio gasto por pedido (últimos 365 dias)',
+            annotations: {
+                alwaysOutside: true,
+                textStyle: {
+                    fontSize: 14,
+                    color: 'black',
+                    auraColor: 'none'
+                }
+            },
+            vAxis: {title: 'Quantidade'},
+            seriesType: 'bars',
+            series: {5: {type: 'line'}}        };
+
+            var chart = new google.visualization.ComboChart(document.getElementById('chart_div'));
+            google.visualization.events.addListener(chart, 'click', function () {
+                var imgUri = chart.getImageURI();
+                // do something with the image URI, like:
+                window.open(imgUri);
+            });
+            chart.draw(dataAnual, optionsAnual);
+            $("#per-ano").attr('checked', 'checked');
+            $("#per-ano").change();
+            $("#filtro-periodos").show();
+
+            $('input[name="periodo"]').on('change', function(){
+                switch($('input[name="periodo"]:checked').attr("data-dias")){
+                    case '7':
+                        chart.draw(dataSemanal, optionsSemanal);
+                        break;
+                    case '30':
+                        chart.draw(dataMensal, optionsMensal);
+                        break;
+                    case '180':
+                        chart.draw(dataSemestral, optionsSemestral);
+                        break;
+                    case '365':
+                        chart.draw(dataAnual, optionsAnual);
+                        break;
+                }
+            });
         });
 
         $('#grafico3').click(function(){
@@ -576,6 +879,7 @@
                 window.open(imgUri);
             });
             chart.draw(data, options);
+            $("#filtro-periodos").hide();
         });
 
         $('#grafico4').click(function(){
