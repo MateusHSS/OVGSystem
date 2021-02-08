@@ -383,6 +383,10 @@
                         </div>
                         <button type="submit" class="btn">Finalizar</button>
                     </form>
+<<<<<<< HEAD
+=======
+
+>>>>>>> 0a75608c963dc42749e69bad15e20f912e14e6da
                 </div>
             </div>
 

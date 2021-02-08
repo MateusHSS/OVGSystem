@@ -40,7 +40,6 @@
 
 <body>
     <header>
-
         <nav class="nav-extended">
             <div class="nav-wrapper">
                 <a href="#" class="brand-logo" id='logo'>OVG SYSTEM</a>
