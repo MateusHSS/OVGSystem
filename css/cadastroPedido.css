@@ -1,0 +1,20 @@
+#lista_clientes{
+    float: left;
+    position: absolute;
+    margin: 5% 1% 1% 1%;
+    width: 425px;
+    z-index: 99999;
+    max-height: 40%;
+    overflow-y: auto;
+}
+
+
+#lista_produtos{
+    position: absolute;
+    margin: 5% 1% 1% 36%;
+    width: 425px;
+    z-index: 99999;
+    text-align: left;
+    max-height: 40%;
+    overflow-y: auto;
+}

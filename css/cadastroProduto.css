@@ -1,0 +1,24 @@
+.resultado{
+    /* float: left;
+    position: absolute;
+    width: 200px;
+    z-index: 99999; */
+    position: absolute;
+    margin: 5% 1% 1% 1%;
+    width: 425px;
+    z-index: 99999;
+    text-align: left;
+    max-height: 10px;
+}
+
+body{
+    background-color: white;
+}
+
+.remove{
+    cursor: pointer;
+}
+
+.add{
+    cursor: pointer;
+}

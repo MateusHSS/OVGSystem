@@ -1,0 +1,93 @@
+@font-face {
+    font-family: "Frutiger";
+    src: url("../fonts/frutiger/frutiger-55-roman-webfont.woff") format("woff"),
+    url("../fonts/frutiger/frutiger-55-roman-webfont.woff2") format("opentype"),
+    url("../fonts/frutiger/frutiger.svg#filename") format("svg");
+    }
+
+.nav-extended{
+    background-color: rgb(55, 119, 188);
+}
+
+.nav-extended .nav-content ul{
+    background-color: rgb(55, 119, 188);
+}
+
+.nav-extended .dropdown-content li a{
+    color: rgb(55, 119, 188);
+}
+
+.nav-wrapper #logo{
+    font-family: 'Fauna One', serif;
+    color: rgb(255, 255, 255);
+}
+
+.navbar{
+    background-color: rgb(55, 119, 188);
+}
+
+.sidenav ul{
+    background-color: rgb(55, 119, 188);
+}
+
+.sidenav{
+    background-color: rgb(55, 119, 188);
+}
+
+header{
+    background-color: rgb(55, 119, 188);
+}
+
+#nav-logo{
+    width: 30%;
+}
+
+.nav-wrapper a{
+    color: rgb(255, 255, 255) !important;
+}
+
+header .nav-extended .nav-content ul li a{
+    color: rgb(255, 255, 255) !important;
+}
+
+.nav-extended .nav-content ul .tabs li a{
+    color: rgb(255, 255, 255) !important;
+}
+
+li{
+    color: rgb(55, 119, 188);
+}
+
+#oi{
+    color: rgb(55, 119, 188);
+    color: rgb(223, 109, 39);
+}
+
+body{
+    background-image: url("../img/vagoes.jpg");
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+    height: 100vh;
+}
+
+.opacity {
+    background: #fff;
+  }
+
+.card-content{
+    font-family: 'Frutiger', sans-serif;
+}
+
+.card-reveal{
+    font-family: 'Frutiger', sans-serif;
+}
+
+.page-footer {
+    background-color: rgb(55, 119, 188);
+}
+
+a{
+    color: black;
+}
+

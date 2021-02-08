@@ -1,0 +1,62 @@
+@font-face {
+    font-family: "Frutiger";
+    src: url("../fonts/frutiger/frutiger-55-roman-webfont.woff") format("woff"),
+    url("../fonts/frutiger/frutiger-55-roman-webfont.woff2") format("opentype"),
+    url("../fonts/frutiger/frutiger.svg#filename") format("svg");
+    }
+
+.vli-color-blue{
+    background-color: rgb(55, 119, 188);
+}
+
+.nav-extended{
+    background-color: rgb(55, 119, 188);
+}
+
+.nav-extended .nav-content ul{
+    background-color: rgb(55, 119, 188);
+}
+
+.nav-extended .container .dropdown-content li a{
+    color: rgb(55, 119, 188);
+}
+
+.nav-wrapper #logo{
+    font-family: 'Fauna One', serif;
+    color: rgb(255, 255, 255);
+}
+
+#nav-logo{
+    width: 30%;
+}
+
+.nav-extended .nav-content .tabs .tab a{
+    color: white !important;
+}
+
+li{
+    color: rgb(55, 119, 188);
+}
+
+button{
+    background-color: rgb(55, 119, 188);
+}
+
+.error{
+    color: red;
+    float: left;
+    font-size: 80%;
+}
+
+.resultado{
+    /* float: left;
+    position: absolute;
+    width: 200px;
+    z-index: 99999; */
+    position: absolute;
+    margin: 5% 1% 1% 1%;
+    z-index: 99999;
+    text-align: left;
+    max-height: 50vh;
+    overflow-y: auto;
+}
