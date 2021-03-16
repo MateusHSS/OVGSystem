@@ -10,13 +10,12 @@
     $resultProdutos = $sqlSelecionaProdutos->get_result();
 
     if($resultProdutos->num_rows > 0){
-
+        $dados = array();
         while($resProdutos = $resultProdutos->fetch_assoc()){
-            echo json_encode($resProdutos);
+            array_push($dados,$resProdutos);
         }
-        
-        ?>
-        <?php
+
+        echo json_encode($dados);
     }else{
         ?>
         <tr>

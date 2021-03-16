@@ -294,7 +294,7 @@
     <main>
         <div class="row">
             <div class="col l2">
-                <!-- <div class="row center">
+                <div class="row center">
                     <h5>Filtros</h5>
                 </div>
                 <div class="row">
@@ -311,7 +311,7 @@
                             </div>
                         </form>
                     </div>
-                </div> -->
+                </div>
             </div>
             <div class="col l8">
                 <div class="row right">
@@ -409,7 +409,6 @@
     <script src="../../js/lista.js"></script>
     <script src="../../js/listas/listaProdutos.js"></script>
     <script type='text/javascript'>
-
     </script>
 </body>
 

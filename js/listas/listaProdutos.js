@@ -19,24 +19,49 @@ $(document).ready(function() {
         $.ajax({
             url: "../controller/select/filtros/produtos.php",
             type: "POST",
-            data: {filtro_nome: function(){
-                return $("#filtro_nome").val()
-            }},
+            data: {
+                filtro_nome: function(){
+                    return $("#filtro_nome").val()
+                }
+            },
             success: function(data) {
                 // console.log(data)
                 var response = $.parseJSON(data);
+                console.log(response);
+                var html = '';
                 for(item in response) {
-                    console.log(item)
-                    var html = "<tr>"
-                    html += "<td>"+item.idproduto+"</td>"
-                    html += "<td>"+item.nomeproduto+"</td>"
-                    html += "<td>"+item.datacadastro+"</td>"
-                    html += "<td class='edita'><a href='#edita"+item.idproduto+"class='modal-trigger orange-text text-darken-3'><i class='material-icons'>create</i></a></td>"
+                    console.log(response[item]);
+                    html += "<tr>"
+                    html += "<td>"+response[item].idproduto+"</td>"
+                    html += "<td>"+response[item].nomeproduto+"</td>"
+                    html += "<td>"+response[item].datacadastro+"</td>"
+                    html += "<td class='edita'><a href='#edita"+response[item].idproduto+"' class='modal-trigger orange-text text-darken-3'><i class='material-icons'>create</i></a></td>"
                     html += "</tr>"
+                    html += "<div class='modal fade' id='edita"+response[item].idproduto+"'>"
+                    html += "<div class='modal-content'>"
+                    html += "<div class='row right'><i class='material-icons modal-close'>close</i></div>"
+                    html += "<h4>Editar informações</h4>"
+                    html += "<div class='divider'></div>"
+                    html += "<form method='post' action='../controller/update/editaProduto.php?id="+response[item].idproduto+"' id='form-edita"+response[item].idproduto+"'>"
+                    html += "<div class='row'>"
+                    html += "<div class='input-field col l12'>"
+                    html += "<input id='nome-produto"+response[item].idproduto+"' type='text' class='validate' name='nome-produto' value='"+response[item].idproduto+"' onkeyup='this.value = this.value.toUpperCase();'>"
+                    html += "<label for='nome-produto"+response[item].idproduto+"'>Nome do produto</label>"
+                    html += "</div>"
+                    html += "</div>"
+                    html += "<div class='row center'>"
+                    html += "<div class='btn light-blue darken-3 botao' type='submit' name='action' id='"+response[item].idproduto+"'>Atualizar<i class='material-icons right'>check</i></div>"
+                    html += "</div>"
+                    html += "</form>"
+                    html += "</div>"
+                    html += "</div>"
                     
-                    $("#prod_list_body").html('')
-                    $("#prod_list_body").append(html)
+                    
                 }
+                $("#prod_list_body").html()
+                $("#prod_list_body").html(html)
+
+                $('.edita').hide();
             }
         });
     })
