@@ -17,8 +17,7 @@
             $dias += ($horas/24)+1;
             $soma = '+'.$dias.' days';
             $tempo_pro =  strtotime($soma, strtotime($tempo_pro));
-        }
-        else{
+        }else{
             $tempo_pro += strtotime($tempo["tempo"]) - strtotime('00:00:00');
         }
     }

@@ -229,6 +229,7 @@ $(document).ready(function() {
                 processData: false,
                 contentType: false,
                 success: function(data) {
+                    console.log(data);
                     var data = $.parseJSON(data);
                     if (data.cod == '1') {
                         M.toast({
@@ -241,9 +242,9 @@ $(document).ready(function() {
                             classes: 'red'
                         });
                     }
-                    setTimeout(function(){
-                        location.reload();
-                    }, 2000);
+                    // setTimeout(function(){
+                    //     location.reload();
+                    // }, 2000);
                 }
             });
         }
