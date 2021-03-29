@@ -1,10 +1,11 @@
 <?php
     include_once "../../../config/conexao.php";
 
-    $nomeProd = $_POST['filtro_nome'];
+    $nomeProd = '%'.$_POST['filtro_nome'].'%';
 
     $sqlSelecionaProdutos = $connect->prepare("SELECT tabproduto.idproduto, tabproduto.nomeproduto, DATE_FORMAT(tabproduto.datacadastro, '%d/%m/%Y') AS datacadastro
-                                                FROM tabproduto WHERE tabproduto.nomeproduto LIKE '%$nomeProd%'");
+                                                FROM tabproduto WHERE tabproduto.nomeproduto LIKE ? OR tabproduto.idproduto LIKE ?");
+    $sqlSelecionaProdutos->bind_param("ss", $nomeProd, $nomeProd);
     $sqlSelecionaProdutos->execute();
 
     $resultProdutos = $sqlSelecionaProdutos->get_result();

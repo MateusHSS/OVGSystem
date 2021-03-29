@@ -303,7 +303,7 @@
                             <div class="row">
                                 <div class="input-field col l12">
                                     <input id="filtro_nome" type="text" class="validate">
-                                    <label for="filtro_nome">Nome</label>
+                                    <label for="filtro_nome">Procurar</label>
                                 </div>
                             </div>
                             <div class="row">

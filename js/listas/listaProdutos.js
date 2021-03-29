@@ -27,10 +27,8 @@ $(document).ready(function() {
             success: function(data) {
                 // console.log(data)
                 var response = $.parseJSON(data);
-                console.log(response);
                 var html = '';
                 for(item in response) {
-                    console.log(response[item]);
                     html += "<tr>"
                     html += "<td>"+response[item].idproduto+"</td>"
                     html += "<td>"+response[item].nomeproduto+"</td>"
