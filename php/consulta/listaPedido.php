@@ -315,8 +315,7 @@
                                 <label>Status</label>
                             </div>
                             <div class="row">
-                                <button class="btn" type="submit" name="action">Filtrar<i
-                                        class="material-icons right">check</i></button>
+                                <button class="btn" type="submit" name="action">Filtrar<i class="material-icons right">check</i></button>
                             </div>
                         </form>
                     </div>

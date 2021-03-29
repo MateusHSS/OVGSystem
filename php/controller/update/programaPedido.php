@@ -171,15 +171,22 @@
             throw new Exception("Erro ao atualizar status do pedido");
         }
 
-        include_once "../insert/turno-maquina.php";
-        include_once "ordenaPedidos.php";
-
         $connect->commit(0, 'insere_pedido_fila');
 
-        echo json_encode(array('cod' => 1));
+        
     }catch(Exception $e){
         $connect->rollback(0, 'insere_pedido_fila');
 
+        echo json_encode(array('cod' => 0, 'erro' => $e->getMessage()));
+    }
+
+    //ORDENACAO DOS PEDIDOS CADASTRADOS
+    try{
+        include_once "../insert/turno-maquina.php";
+
+        echo json_encode(array('cod' => 1));
+        
+    }catch(Exception $e){
         echo json_encode(array('cod' => 0, 'erro' => $e->getMessage()));
     }
 

@@ -229,7 +229,6 @@ $(document).ready(function() {
                 processData: false,
                 contentType: false,
                 success: function(data) {
-                    console.log(data);
                     var data = $.parseJSON(data);
                     if (data.cod == '1') {
                         M.toast({
