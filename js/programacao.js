@@ -215,10 +215,10 @@ $(document).ready(function() {
             })
             
     
-            // Display the key/value pairs
-            for (var pair of formPrograma.entries()) {
-                console.log(pair[0] + ', ' + pair[1]);
-            }   
+            // // Display the key/value pairs
+            // for (var pair of formPrograma.entries()) {
+            //     console.log(pair[0] + ', ' + pair[1]);
+            // }   
 
             
     
