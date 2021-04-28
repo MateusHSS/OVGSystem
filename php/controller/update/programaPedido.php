@@ -12,11 +12,13 @@
         foreach($_POST['processo'] as $processo){
             $idProcesso = (int)$processo['id'];
             $tempoProcesso = $processo['tempo'];
+            $tempoHoras = explode(":", $processo['tempo'])[0];
+            $tempoMinutos = explode(":", $processo['tempo'])[1];
             $qtdProcesso = (int)$processo['qtd'];
             $funcProcesso = (int)$processo['funcionarios'];
 
-            $sqlCadastraProcessosProduto = $connect->prepare("INSERT INTO tabprocessosproduto (idproduto, idprocesso, vezes, funcionarios, tempo) VALUES (?, ?, ?, ?, ?)");
-            $sqlCadastraProcessosProduto->bind_param("iiiis", $idPed, $idProcesso, $qtdProcesso, $funcProcesso, $tempoProcesso);
+            $sqlCadastraProcessosProduto = $connect->prepare("INSERT INTO tabprocessosproduto (idproduto, idprocesso, vezes, funcionarios, tempo, tempoHoras, tempoMinutos) VALUES (?, ?, ?, ?, ?, ?, ?)");
+            $sqlCadastraProcessosProduto->bind_param("iiiisss", $idPed, $idProcesso, $qtdProcesso, $funcProcesso, $tempoProcesso, $tempoHoras, $tempoMinutos);
             $sqlCadastraProcessosProduto->execute();
     
             if($sqlCadastraProcessosProduto->affected_rows <= 0){

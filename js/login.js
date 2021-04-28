@@ -46,8 +46,8 @@ $(document).ready(function(){
                 data: formLogin,
                 processData: false,
                 contentType: false,
-                success: function(data) {
-                    var data = $.parseJSON(data);
+                success: function(response) {
+                    let data = $.parseJSON(response);
                     
                     if (data.cod == 1) {
                         if(data.pAcesso == 1){

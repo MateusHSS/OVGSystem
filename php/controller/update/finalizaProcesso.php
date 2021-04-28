@@ -47,6 +47,11 @@
         $sqlFinalizaPedido = $connect->prepare("UPDATE tabpedido SET statuspedido = 5, final_real = NOW() WHERE idpedido = ?");
         $sqlFinalizaPedido->bind_param("i", $pedido);
         $sqlFinalizaPedido->execute();
+
+        $sqlDeletaProcessos = $connect->prepare("DELETE FROM tabprocessosproduto WHERE idproduto = ?");
+        $sqlDeletaProcessos->bind_param("i", $pedido);
+        $sqlDeletaProcessos->execute();
+        
         echo json_encode(array("cod" => '2', "msg" => "Processo finalizado com sucesso!", "class" => "green", "alert" => "Todos os processos desse pedido foram finalizados, pedido aguardando retirada!"));
     }
 

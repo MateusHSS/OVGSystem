@@ -39,7 +39,7 @@
 </head>
 
 <body>
-    <header>
+<header>
         <nav class="nav-extended">
             <div class="nav-wrapper">
                 <a href="#" class="brand-logo" id='logo'>OVG SYSTEM</a>
@@ -47,253 +47,92 @@
                 <ul id="nav-mobile" class="right hide-on-med-and-down">
                     <li><a href="../controller/logout.php">Sair</a></li>
                     <li><img src="../../img/logo-teste.png" id='nav-logo'></li>
+                    <?= in_array("editar_permissoes", $_SESSION['habilidades'])  ? '<li><a href="#">Editar permissoes</a></li>' : '' ?>
                 </ul>
             </div>
 
-            <?php
-switch($_SESSION['perfil']){
-case 1:
-?>
             <!-- MENU CADASTRO -->
-
-            <ul id="cadastro-menu" class="dropdown-content">
-                <li><a href='cadastroAtividade.php'>Atividade</a></li>
-                <li><a href='cadastroCliente.php'>Cliente</a></li>
-                <li><a href='cadastroCorredor.php'>Corredor</a></li>
-                <li><a href='cadastroFuncionario.php'>Funcionário</a></li>
-                <li><a href='cadastroMaterial.php'>Material</a></li>
-                <li><a href='cadastroProcesso.php'>Processo</a></li>
-                <li><a href='cadastroProduto.php'>Produto</a></li>
-                <li><a href='cadastroSeguranca.php'>Segurança</a></li>
-                <li><a href='cadastroSetor.php'>Setor</a></li>
-                <li><a href='cadastroStatus.php'>Status</a></li>
-                <li><a href='cadastroUsuario.php'>Usuário</a></li>
+            <ul id='cadastro-menu' class='dropdown-content'>
+                <?= in_array("cadastrar_atividade", $_SESSION['habilidades']) ? "<li><a href='cadastroAtividade.php'>Atividade</a></li>" : "" ?>
+                <?= in_array("cadastrar_cliente", $_SESSION['habilidades']) ? "<li><a href='cadastroCliente.php'>Cliente</a></li>" : "" ?>
+                <?= in_array("cadastrar_corredor", $_SESSION['habilidades']) ? "<li><a href='cadastroCorredor.php'>Corredor</a></li>" : "" ?>
+                <?= in_array("cadastrar_funcionario", $_SESSION['habilidades']) ? "<li><a href='cadastroFuncionario.php'>Funcionário</a></li>" : "" ?>
+                <?= in_array("cadastrar_material", $_SESSION['habilidades']) ? "<li><a href='cadastroMaterial.php'>Material</a></li>" : "" ?>
+                <?= in_array("cadastrar_processo", $_SESSION['habilidades']) ? "<li><a href='cadastroProcesso.php'>Processo</a></li>" : "" ?>
+                <?= in_array("cadastrar_produto", $_SESSION['habilidades']) ? "<li><a href='cadastroProduto.php'>Produto</a></li>" : "" ?>
+                <?= in_array("cadastrar_seguranca", $_SESSION['habilidades']) ? "<li><a href='cadastroSeguranca.php'>Segurança</a></li>" : "" ?>
+                <?= in_array("cadastrar_setor", $_SESSION['habilidades']) ? "<li><a href='cadastroSetor.php'>Setor</a></li>" : "" ?>
+                <?= in_array("cadastrar_status", $_SESSION['habilidades']) ? "<li><a href='cadastroStatus.php'>Status</a></li>" : "" ?>
+                <?= in_array("cadastrar_usuario", $_SESSION['habilidades']) ? "<li><a href='cadastroUsuario.php'>Usuário</a></li>" : "" ?>
             </ul>
 
             <!-- MENU CONSULTA -->
-
-            <ul id="consulta-menu" class="dropdown-content">
-                <li><a href='../consulta/listaAtividade.php'>Atividades</a></li>
-                <li><a href='../consulta/listaCliente.php'>Clientes</a></li>
-                <li><a href='../consulta/listaCorredor.php'>Corredores</a></li>
-                <li><a href='../consulta/listaFuncionario.php'>Funcionários</a></li>
-                <li><a href='../consulta/listaMaterial.php'>Materiais</a></li>
-                <li><a href='../consulta/listaProcessos.php'>Processos</a></li>
-                <li><a href='../consulta/listaProduto.php'>Produtos</a></li>
-                <li><a href='../consulta/listaSeguranca.php'>Seguranças</a></li>
-                <li><a href='../consulta/listaSetor.php'>Setores</a></li>
-                <li><a href='../consulta/listaStatus.php'>Status</a></li>
-                <li><a href='../consulta/listaUsuario.php'>Usuários</a></li>
+            <ul id='consulta-menu' class='dropdown-content'>
+                <?= in_array("visualizar_atividades", $_SESSION['habilidades']) ? "<li><a href='../consulta/listaAtividade.php'>Atividades</a></li>" : "" ?>
+                <?= in_array("visualizar_clientes", $_SESSION['habilidades']) ? "<li><a href='../consulta/listaCliente.php'>Clientes</a></li>" : "" ?>
+                <?= in_array("visualizar_corredores", $_SESSION['habilidades']) ? "<li><a href='../consulta/listaCorredor.php'>Corredores</a></li>" : "" ?>
+                <?= in_array("visualizar_funcionarios", $_SESSION['habilidades']) ? "<li><a href='../consulta/listaFuncionario.php'>Funcionários</a></li>" : "" ?>
+                <?= in_array("visualizar_materiais", $_SESSION['habilidades']) ? "<li><a href='../consulta/listaMaterial.php'>Materiais</a></li>" : "" ?>
+                <?= in_array("visualizar_processos", $_SESSION['habilidades']) ? "<li><a href='../consulta/listaProcessos.php'>Processos</a></li>" : "" ?>
+                <?= in_array("visualizar_produtos", $_SESSION['habilidades']) ? "<li><a href='../consulta/listaProduto.php'>Produtos</a></li>" : "" ?>
+                <?= in_array("visualizar_segurancas", $_SESSION['habilidades']) ? "<li><a href='../consulta/listaSeguranca.php'>Seguranças</a></li>" : "" ?>
+                <?= in_array("visualizar_setores", $_SESSION['habilidades']) ? "<li><a href='../consulta/listaSetor.php'>Setores</a></li>" : "" ?>
+                <?= in_array("visualizar_status", $_SESSION['habilidades']) ? "<li><a href='../consulta/listaStatus.php'>Status</a></li>" : "" ?>
+                <?= in_array("visualizar_usuarios", $_SESSION['habilidades']) ? "<li><a href='../consulta/listaUsuario.php'>Usuários</a></li>" : "" ?>
             </ul>
 
             <!-- MENU ESTOQUE -->
             <ul id="estoque-menu" class="dropdown-content">
-                <li><a href='../consulta/listaEstoque.php'>Controle</a></li>
-                <li><a href='../cadastro/entradaEstoque.php'>Entrada</a></li>
+                <?= in_array("visualizar_estoque", $_SESSION['habilidades']) ? "<li><a href='../consulta/listaEstoque.php'>Controle</a></li>" : "" ?>
+                <?= in_array("entrada_estoque", $_SESSION['habilidades']) ? "<li><a href='entradaEstoque.php'>Entrada</a></li>" : "" ?>
             </ul>
 
             <!-- MENU PEDIDOS -->
             <ul id="pedido-menu" class="dropdown-content">
-                <li><a href='cadastroPedido.php'>Incluir Novo</a></li>
-                <li><a href='../consulta/listaPedido.php'>Lista</a></li>
-                <li><a href='../consulta/retirada.php'>Retirada</a></li>
+                <?= in_array("cadastrar_pedido", $_SESSION['habilidades']) ? "<li><a href='cadastroPedido.php'>Incluir Novo</a></li>" : "" ?>
+                <?= in_array("visualizar_pedidos", $_SESSION['habilidades']) ? "<li><a href='../consulta/listaPedido.php'>Lista</a></li>" : "" ?>
+                <?= in_array("retirar_pedido", $_SESSION['habilidades']) ? "<li><a href='../consulta/retirada.php'>Retirada</a></li>" : "" ?>
             </ul>
 
             <!-- MENU PROGRAMACAO -->
             <ul id="programacao-menu" class="dropdown-content">
-                <li><a href='../consulta/programacao.php'>Programar</a></li>
-                <li><a href='../consulta/programados.php'>Programados</a></li>
-                <li><a href='../consulta/turno.php'>Turnos</a></li>
-                <li><a href='../consulta/apontamento.php'>Apontamento</a></li>
+                <?= in_array("programar_pedido", $_SESSION['habilidades']) ? "<li><a href='../consulta/programacao.php'>Programar</a></li>" : "" ?>
+                <?= in_array("visualizar_programacao", $_SESSION['habilidades']) ? "<li><a href='../consulta/programados.php'>Programados</a></li>" : "" ?>
+                <?= in_array("visualizar_turnos", $_SESSION['habilidades']) ? "<li><a href='../consulta/turno.php'>Turnos</a></li>" : "" ?>
+                <?= in_array("apontar_pedidos", $_SESSION['habilidades']) ? "<li><a href='../consulta/apontamento.php'>Apontamento</a></li>" : "" ?>
             </ul>
 
             <div class="nav-content">
-
                 <ul class="tabs">
+                    <?= in_array("cadastro", $_SESSION['habilidades']) 
+                        ? '<li class="tab"><a class="dropdown-trigger active" data-target="cadastro-menu">CADASTRO<i class="material-icons right">arrow_drop_down</i></a></li>' 
+                        : '' ?> 
 
-                    <li class="tab"><a class="dropdown-trigger active white-text" data-target="cadastro-menu">CADASTRO<i
-                                class='material-icons right'>arrow_drop_down</i></a></li>
+                    <?= in_array("visualizar", $_SESSION['habilidades']) 
+                        ? '<li class="tab"><a class="dropdown-trigger active" data-target="consulta-menu">CONSULTA<i class="material-icons right">arrow_drop_down</i></a></li>' 
+                        : '' ?>
 
-                    <li class="tab"><a class="dropdown-trigger active white-text" data-target="consulta-menu">CONSULTA<i
-                                class='material-icons right'>arrow_drop_down</i></a></li>
+                    <?= in_array("estoque", $_SESSION['habilidades']) 
+                        ? '<li class="tab"><a class="dropdown-trigger active" data-target="estoque-menu">ESTOQUE<i class="material-icons right">arrow_drop_down</i></a></li>' 
+                        : '' ?>
 
-                    <li class="tab"><a class="dropdown-trigger active white-text" data-target="estoque-menu">ESTOQUE<i
-                                class='material-icons right'>arrow_drop_down</i></a></li>
+                    <?= in_array("pedido", $_SESSION['habilidades']) 
+                        ? '<li class="tab"><a class="dropdown-trigger active" data-target="pedido-menu">PEDIDO<i
+                                class="material-icons right">arrow_drop_down</i></a></li>'
+                        : '' ?>
+                        
 
-                    <li class="tab"><a class="dropdown-trigger active white-text" data-target="pedido-menu">PEDIDO<i
-                                class='material-icons right'>arrow_drop_down</i></a></li>
+                    <?= in_array("relatorios", $_SESSION['habilidades']) 
+                        ? '<li class="tab"><a class="active" href="../relatorios/relatorios.php">RELATÓRIOS</a></li>' 
+                        : '' ?>
 
-                    <li class="tab"><a class="active white-text" href="../relatorios/relatorios.php">RELATÓRIOS</a></li>
-
-                    <li class="tab"><a class="dropdown-trigger active white-text"
-                            data-target="programacao-menu">PROGRAMAÇÃO<i
-                                class='material-icons right'>arrow_drop_down</i></a></li>
-
+                    <?= in_array("programacao", $_SESSION['habilidades']) 
+                        ? '<li class="tab"><a class="dropdown-trigger active" data-target="programacao-menu">PROGRAMAÇÃO<i
+                                class="material-icons right">arrow_drop_down</i></a></li>'
+                        : '' ?>
                 </ul>
-
             </div>
-            <?php
-    break;
-case 2:
-    ?>
-            <!-- MENU CADASTRO -->
-
-            <ul id="cadastro-menu" class="dropdown-content">
-                <li><a href='cadastroAtividade.php'>Atividade</a></li>
-                <li><a href='cadastroCliente.php'>Cliente</a></li>
-                <li><a href='cadastroCorredor.php'>Corredor</a></li>
-                <li><a href='cadastroFuncionario.php'>Funcionário</a></li>
-                <li><a href='cadastroMaterial.php'>Material</a></li>
-                <li><a href='cadastroProcesso.php'>Processo</a></li>
-                <li><a href='cadastroProduto.php'>Produto</a></li>
-                <li><a href='cadastroSeguranca.php'>Segurança</a></li>
-                <li><a href='cadastroSetor.php'>Setor</a></li>
-                <li><a href='cadastroStatus.php'>Status</a></li>
-                <li><a href='cadastroUsuario.php'>Usuário</a></li>
-            </ul>
-
-            <!-- MENU CONSULTA -->
-
-            <ul id="consulta-menu" class="dropdown-content">
-                <li><a href='../consulta/listaAtividade.php'>Atividades</a></li>
-                <li><a href='../consulta/listaCliente.php'>Clientes</a></li>
-                <li><a href='../consulta/listaCorredor.php'>Corredores</a></li>
-                <li><a href='../consulta/listaFuncionario.php'>Funcionários</a></li>
-                <li><a href='../consulta/listaMaterial.php'>Materiais</a></li>
-                <li><a href='../consulta/listaProcessos.php'>Processos</a></li>
-                <li><a href='../consulta/listaProduto.php'>Produtos</a></li>
-                <li><a href='../consulta/listaSeguranca.php'>Seguranças</a></li>
-                <li><a href='../consulta/listaSetor.php'>Setores</a></li>
-                <li><a href='../consulta/listaStatus.php'>Status</a></li>
-                <li><a href='../consulta/listaUsuario.php'>Usuários</a></li>
-            </ul>
-
-            <!-- MENU PEDIDOS -->
-            <ul id="pedido-menu" class="dropdown-content">
-                <li><a href='cadastroPedido.php'>Incluir Novo</a></li>
-                <li><a href='../consulta/listaPedido.php'>Lista</a></li>
-            </ul>
-
-            <div class="nav-content">
-
-                <ul class="tabs">
-
-                    <li class="tab"><a class="dropdown-trigger active white-text" data-target="cadastro-menu">CADASTRO<i
-                                class='material-icons right'>arrow_drop_down</i></a></li>
-
-                    <li class="tab"><a class="dropdown-trigger active white-text" data-target="consulta-menu">CONSULTA<i
-                                class='material-icons right'>arrow_drop_down</i></a></li>
-
-                    <li class="tab"><a class="dropdown-trigger active white-text" data-target="pedido-menu">PEDIDO<i
-                                class='material-icons right'>arrow_drop_down</i></a></li>
-
-                    <li class="tab"><a class="active white-text" href="../relatorios/relatorios.php">RELATÓRIOS</a></li>
-
-                </ul>
-
-            </div>
-
-            <?php
-    break;
-case 3:
-    ?>
-            <!-- MENU CADASTRO -->
-
-            <ul id="cadastro-menu" class="dropdown-content">
-                <li><a href='cadastro/cadastroProduto.php'>Produto</a></li>
-            </ul>
-
-            <!-- MENU PEDIDOS -->
-            <ul id="pedido-menu" class="dropdown-content">
-                <li><a href='cadastro/cadastroPedido.php'>Incluir Novo</a></li>
-            </ul>
-
-            <!-- MENU PROGRAMACAO -->
-            <ul id="programacao-menu" class="dropdown-content">
-                <li><a href='consulta/programados.php'>Programados</a></li>
-            </ul>
-
-            <!-- MENU ESTOQUE -->
-            <ul id="estoque-menu" class="dropdown-content">
-                <li><a href='consulta/listaEstoque.php'>Controle</a></li>
-                <li><a href='cadastro/entradaEstoque.php'>Entrada</a></li>
-            </ul>
-
-            <div class="nav-content">
-
-                <ul class="tabs">
-
-                    <li class="tab"><a class="dropdown-trigger active white-text" data-target="cadastro-menu">CADASTRO<i
-                                class='material-icons right'>arrow_drop_down</i></a></li>
-
-                    <li class="tab"><a class="dropdown-trigger active white-text" data-target="estoque-menu">ESTOQUE<i
-                                class='material-icons right'>arrow_drop_down</i></a></li>
-
-                    <li class="tab"><a class="dropdown-trigger active white-text" data-target="pedido-menu">PEDIDO<i
-                                class='material-icons right'>arrow_drop_down</i></a></li>
-
-                    <li class="tab"><a class="dropdown-trigger active white-text"
-                            data-target="programacao-menu">PROGRAMAÇÃO<i
-                                class='material-icons right'>arrow_drop_down</i></a></li>
-
-                </ul>
-
-            </div>
-            <?php
-    break;
-case 4:
-    ?>
-            <!-- MENU CADASTRO -->
-
-            <ul id="cadastro-menu" class="dropdown-content">
-                <li><a href='cadastroProduto.php'>Produto</a></li>
-            </ul>
-
-            <!-- MENU PEDIDOS -->
-            <ul id="pedido-menu" class="dropdown-content">
-                <li><a href='cadastroPedido.php'>Incluir Novo</a></li>
-                <li><a href='../consulta/listaPedido.php'>Lista</a></li>
-            </ul>
-
-            <!-- MENU PROGRAMACAO -->
-            <ul id="programacao-menu" class="dropdown-content">
-                <li><a href='../consulta/programados.php'>Programados</a></li>
-                <li><a href='../consulta/apontamento.php'>Apontamento</a></li>
-            </ul>
-
-            <!-- MENU ESTOQUE -->
-            <ul id="estoque-menu" class="dropdown-content">
-                <li><a href='../consulta/listaEstoque.php'>Controle</a></li>
-                <li><a href='entradaEstoque.php'>Entrada</a></li>
-            </ul>
-
-            <div class="nav-content">
-
-                <ul class="tabs">
-
-                    <li class="tab"><a class="dropdown-trigger active white-text" data-target="cadastro-menu">CADASTRO<i
-                                class='material-icons right'>arrow_drop_down</i></a></li>
-
-                    <li class="tab"><a class="dropdown-trigger active white-text" data-target="estoque-menu">ESTOQUE<i
-                                class='material-icons right'>arrow_drop_down</i></a></li>
-
-                    <li class="tab"><a class="dropdown-trigger active white-text" data-target="pedido-menu">PEDIDO<i
-                                class='material-icons right'>arrow_drop_down</i></a></li>
-
-                    <li class="tab"><a class="dropdown-trigger active white-text"
-                            data-target="programacao-menu">PROGRAMAÇÃO<i
-                                class='material-icons right'>arrow_drop_down</i></a></li>
-
-                </ul>
-
-            </div>
-
-            <?php
-}
-?>
-
         </nav>
-
     </header>
 
     <main>
@@ -321,10 +160,6 @@ case 4:
             </form>
         </div>
     </main>
-
-
-
-
 
     <!--JavaScript at end of body for optimized loading-->
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.js">

@@ -1,517 +1,578 @@
 <?php 
-    set_time_limit(0);
-    include_once "../../config/conexao.php";
+set_time_limit(0);
+include_once "../../config/conexao.php";
 
-    // MATEUS MARGOTTI
+// MATEUS MARGOTTI
 
-    //datas para os próximos SQLs
-    date_default_timezone_set('America/Sao_Paulo');
-    $date = date('Y-m-d H:i:s');
-    date_default_timezone_set('America/Sao_Paulo');
-    $date1 = date('Y-m-d');
-    $hora = date('H:i:s');
-    
-    //atualiza os processos q n foram feitos para se escalonarem novamente da forma certa
-    $atualizaTabelas = $connect->prepare("UPDATE tabprocessosproduto SET idmaquina = NULL, pros_inicial = NULL, pros_final = NULL WHERE pros_inicial >= '".$date."'");
-    $atualizaTabelas->execute();
-    
-    //JUNTAR OS SUB PROCESSOS NO ORIGINAL
-    //subprocessos são os processos na tabela bem semelhantes que possuem mesmo id_sub
-    //eles são seperados quando o tempo em q ele acha pra se executar n é suficiente e precisa continuar depois
-    
-    //sql para buscar os processos q n começaram e aux para n repetir o processo com outro sub igual
-    $id_aux = 0;
-    $sql_processos = $connect->prepare("SELECT * FROM tabprocessosproduto WHERE finalizado != 1 AND (pros_inicial > ? OR pros_inicial IS NULL) ORDER BY idtabprocessosproduto");
-    $sql_processos->bind_param('s', $date);
-    $sql_processos->execute();
-    $result_sql_processos = $sql_processos->get_result();
-    
-    while($pross = $result_sql_processos->fetch_assoc()){
+//datas para os próximos SQLs
+date_default_timezone_set('America/Sao_Paulo');
+$dataHoje = date('Y-m-d H:i:s');
+$diaHoje = date('Y-m-d');
+$horaHoje = date('H:i:s');
+
+//atualiza os processos q n foram feitos para se escalonarem novamente da forma certa
+$atualizaTabelas = $connect->prepare(
+    "UPDATE tabprocessosproduto 
+    SET idmaquina = NULL, pros_inicial = NULL, pros_final = NULL 
+    WHERE pros_inicial >= '".$dataHoje."' and final_real is NULL"
+);
+$atualizaTabelas->execute();
+
+//JUNTAR OS SUB PROCESSOS NO ORIGINAL
+//subprocessos são os processos com mesmo idproduto, idprocesso
+//eles são seperados quando o tempo em q ele acha pra se executar n é suficiente e precisa continuar depois
+
+//sql para buscar os processos q n começaram e aux para n executar um deletado
+$aux = 0;
+$sql_processos = $connect->prepare(
+    "SELECT idtabprocessosproduto, idproduto, idprocesso FROM tabprocessosproduto 
+    WHERE finalizado = 0 AND (pros_inicial > '".$dataHoje."' OR pros_inicial IS NULL) 
+    ORDER BY idproduto ASC, idprocesso ASC, idtabprocessosproduto ASC"
+);
+$sql_processos->execute();
+$result_sql_processos = $sql_processos->get_result();
+
+// roda todos os processos
+while($pross = $result_sql_processos->fetch_assoc()){
+    // se houver de juntar o aux vai receber uma quantidade para que
+    // n rode o else nos processos q vão ser deletados
+    if($aux > 0) {
+        $aux--;
+    }
+    else {
+        // sql q busca todos os subs do processo atual e armazenar em 3 dados
+        // tempo total de hora, de minutos, e quant de subs
+        $sql_subprocessos = $connect->prepare(
+            "SELECT sum(tempoHoras), sum(tempoMinutos), count(*) FROM tabprocessosproduto 
+            WHERE finalizado = 0 AND (pros_inicial > ? OR pros_inicial IS NULL) 
+            AND idproduto = ? AND idprocesso = ? 
+            ORDER BY idtabprocessosproduto ASC"
+        );
+        $sql_subprocessos->bind_param('sii', $dateaHoje, $pross["idproduto"], $pross["idprocesso"]);
+        $sql_subprocessos->execute();
+
+        $result_sql_subprocessos = $sql_subprocessos->get_result();
+        $resultSomas = $result_sql_subprocessos->fetch_array();
+        $quant_subprocessos = $resultSomas[2];
+
+        //se tiver algum...
+        if($quant_subprocessos > 1){
+            // faz a string do campo tempo e concerta a soma dos minutos
+            $horas = $resultSomas[0] + floor($resultSomas[1]/60);
+            $minutos = $resultSomas[1] % 60;
+            $tempo = $horas.":".$minutos.":00";
+
+            // atualiza a raiz com o tempo total
+            $sql_update_subprocesso_raiz = $connect->prepare(
+                "UPDATE tabprocessosproduto 
+                SET tempo = ?, tempoHoras = ?, tempoMinutos = ? 
+                WHERE idtabprocessosproduto = ?"
+            );
+            $sql_update_subprocesso_raiz->bind_param('siii', $tempo, $horas, $minutos, $pross["idtabprocessosproduto"]);
+            $sql_update_subprocesso_raiz->execute();
+
+            // deleta os outros
+            $sql_delete_subs = $connect->prepare(
+                "DELETE FROM tabprocessosproduto 
+                WHERE finalizado = 0 AND (pros_inicial > ? OR pros_inicial IS NULL) 
+                AND idproduto = ? AND idprocesso = ? AND idtabprocessosproduto != ?"
+            );
+            $sql_delete_subs->bind_param('siii', $dataHoje, $pross["idproduto"], $pross["idprocesso"], $pross["idtabprocessosproduto"]);
+            $sql_delete_subs->execute();
+
+            $aux = $quant_subprocessos - 1;
+        }
+    }
+}
+
+//ENTRADA DE EMERGENCIAL
+//sql q verifica se tem um emergencial q acabou de chegar
+$sql_emergencial_existe = mysqli_query($connect, 
+    "SELECT idtabpedidos_dia FROM tabpedidos_dia 
+    WHERE emergencial = 2 AND data_inicial IS NULL AND 
+    ordem IS NULL LIMIT 1"
+);
+$emergencial_existe = mysqli_num_rows($sql_emergencial_existe);
+if($emergencial_existe > 0){
+
+    //sql q verifica se estam em um turno em andamento
+    $sql_turno_andamento = mysqli_query($connect, 
+        "SELECT intervalo, hora_intervalo FROM tabhorariodiario 
+        WHERE data = '".$diaHoje."' AND inicio <= '".$horaHoje."' AND fim >= '".$horaHoje."'
+        LIMIT 1"
+    );
+    $turno_andamento = mysqli_fetch_array($sql_turno_andamento);
+    if($turno_andamento != NULL){
+
+        $final_intervalo = gmdate('H:i:s', strtotime($turno_andamento["hora_intervalo"]) + strtotime($turno_andamento["intervalo"]) - strtotime('03:00:00'));
+        $final_intervalo_array = explode(':', $final_intervalo);
+        $inicio_intervalo_array = explode(':', $turno_andamento["hora_intervalo"]);
+        $horaHoje_array = explode(':', $horaHoje);
+        $pedidos_alterados = "";
+
+        //sql q pega todos os processos n emergenciais em andamento
+        $sql_andamento = mysqli_query($connect, 
+            "SELECT a.idtabprocessosproduto, a.idproduto, a.tempo, a.pros_inicial, a.pros_final 
+            FROM tabprocessosproduto as a, tabpedidos_dia as b 
+            WHERE a.pros_inicial <= '".$dataHoje."' AND a.pros_final > '".$dataHoje."' 
+            AND a.idproduto = b.id_pedido AND b.emergencial < 2"
+        );
+        while($processo_andamento = mysqli_fetch_assoc($sql_andamento)){
+            $pedidos_alterados .= $processo_andamento["idproduto"].",";
+
+            $pros_inicial_array = explode(':', strstr($processo_andamento["pros_inicial"], " "));
+            $pros_final_array = explode(':', strstr($processo_andamento["pros_final"], " "));
+            $tempo_process_array = explode(':', $processo_andamento["tempo"]);
+
+            //condições para ver em q parte do intervalo esta durante/antes/depois
+            if($turno_andamento["hora_intervalo"] <= $horaHoje AND $final_intervalo >= $horaHoje){
+                $tempo_restante = $pros_final_array[1] - $final_intervalo_array[1] < 0 ?
+                    ($pros_final_array[0] - 1 - $final_intervalo_array[0]).":"
+                    .($pros_final_array[1] + 60 - $final_intervalo_array[1]).":0"
+                    : ($pros_final_array[0] - $final_intervalo_array[0]).":"
+                    .($pros_final_array[1] - $final_intervalo_array[1]).":0"
+                ;
+            }
+            elseif($horaHoje <= $turno_andamento["hora_intervalo"]){
+                $tempo_passado = $horaHoje_array[1] - $pros_inicial_array[1] < 0 ?
+                    ($horaHoje_array[0] - 1 - $pros_inicial_array[0]).":"
+                    .($horaHoje_array[1] + 60 - $pros_inicial_array[1]).":0"
+                    : ($horaHoje_array[0] - $pros_inicial_array[0]).":"
+                    .($horaHoje_array[1] - $pros_inicial_array[1]).":0"
+                ;
+                $tempo_passado_array = explode(':', $tempo_passado);
+                $tempo_restante = $tempo_process_array[1] - $tempo_passado_array[1] < 0 ?
+                    ($tempo_process_array[0] - 1 - $tempo_passado_array[0]).":"
+                    .($tempo_process_array[1] + 60 - $tempo_passado_array[1]).":0"
+                    : ($tempo_process_array[0] - $tempo_passado_array[0]).":"
+                    .($tempo_process_array[1] - $tempo_passado_array[1]).":0"
+                ;
+            }
+            elseif($horaHoje >= $final_intervalo){
+                $tempo_restante = $pros_final_array[1] - $horaHoje_array[1] < 0 ?
+                    ($pros_final_array[0] - 1 - $horaHoje_array[0]).":"
+                    .($pros_final_array[1] + 60 - $horaHoje_array[1]).":0"
+                    : ($pros_final_array[0] - $horaHoje_array[0]).":"
+                    .($pros_final_array[1] - $horaHoje_array[1]).":0"
+                ;
+            }
+            $tempo_restante_array = explode(':', $tempo_restante);
+
+            //realiza update 
+            //para os processos q estavam em andamento e os atualizam com o tempo restante e emergencial = 1
+
+            $sql_update_andamento = $connect->prepare(
+                "UPDATE tabprocessosproduto 
+                SET tempo = '".$tempo_restante."', escalonado = 0, pros_inicial = NULL, 
+                pros_final = NULL, tempoHoras = '".$tempo_restante_array[0]."', 
+                tempoMinutos = '".$tempo_restante_array[1]."' 
+                WHERE idtabprocessosproduto = ".$processo_andamento["idtabprocessosproduto"]
+            );
+            $sql_update_andamento->execute();
+        }
+        if($pedidos_alterados != "") {
+            $pedidos_alterados = substr($pedidos_alterados, 0, -1);
+            $sql_update_andamento_emer = $connect->prepare(
+                "UPDATE tabpedidos_dia SET emergencial = 1 
+                WHERE id_pedido in (".$pedidos_alterados.")"
+            );
+            $sql_update_andamento_emer->execute();
+        }
         
-        //cria uma busca pra ver se esse dado ainda existe
-        $existencia = $connect->prepare("SELECT * FROM tabprocessosproduto WHERE idtabprocessosproduto = ".$pross['idtabprocessosproduto']);
-        $existencia->execute();
-        $result_existencia = $existencia->get_result();
-
-        if($result_existencia->num_rows > 0){
-            //sql q busca todos os subs do processo atual
-            $sql_subprocessos = $connect->prepare("SELECT * FROM tabprocessosproduto WHERE (pros_inicial > ? OR pros_inicial IS NULL) 
-                                                    AND idtabprocessosproduto != ? AND id_sub = ? AND  idproduto = ? AND idprocesso = ? 
-                                                    ORDER BY idtabprocessosproduto ASC");
-            $sql_subprocessos->bind_param('siiii', $date, $pross["idtabprocessosproduto"], $pross["id_sub"], $pross["idproduto"], $pross["idprocesso"]);
-            $sql_subprocessos->execute();
-            $result_sql_subprocessos = $sql_subprocessos->get_result();
-            
-            //se tiver algum...
-            if($result_sql_subprocessos->num_rows > 0){
-
-                //variaveis q auxiliam e uma para juntar os tempos do subs
-                $aux_ = 0;
-                $ficou = true;
-                $tempo_subs = strtotime($pross["tempo"]) - strtotime('00:00:00');
-
-                //roda todos os subs
-                while($subprocessos = $result_sql_subprocessos->fetch_assoc()){
-                    
-                    //verifica se esse subprocesso já foi utilizado para junção para n realizar isso
-                    if($id_aux == $subprocessos["idtabprocessosproduto"] AND $aux_ == 0){
-                        $ficou = false;
-                        break;
-                    }
-
-                    //se for o primeiro sub, atribui alguns valores como auxiliares
-                    if($aux_ == 0){
-                        $aux_ = 1;
-                        $id_aux = $pross["idtabprocessosproduto"];
-                    }
-
-                    //somo o tempo da sub e da um delete nele
-                    $tempo_subs += strtotime($subprocessos["tempo"]) - strtotime('00:00:00');
-                    $sql_delete_sub = $connect->prepare("DELETE FROM tabprocessosproduto WHERE idtabprocessosproduto = ".$subprocessos["idtabprocessosproduto"]);
-                    $sql_delete_sub->execute();
-                }
-
-                //se ele n passou no primeiro if do while...
-                if($ficou){
-                    //atualiza o original com o tempo certo
-                    $tempo_subs_certo = gmdate('H:i:s', $tempo_subs);
-                    $sql_update_original = $connect->prepare("UPDATE tabprocessosproduto SET tempo = '".$tempo_subs_certo."' WHERE idtabprocessosproduto = ".$pross["idtabprocessosproduto"]);
-                    $sql_update_original->execute();
-                }
-            }
-        }
     }
+}
+
+//ORDENAÇÃO
+//ordena todos os pedidos de acordo com o peso e da a ordenação para os processos
+//sql q pega todos os pedidos pelo a prioridade exigida
+$aux=0;
+$sql = mysqli_query($connect, 
+    "SELECT * FROM tabpedidos_dia WHERE data_final > '".$dataHoje."' 
+    OR data_final is null OR data_final = '0000-00-00 00:00:00' 
+    order by emergencial DESC, peso DESC, data ASC"
+);
+while($dado = mysqli_fetch_assoc($sql)){
+
+    //da a ordem para os pedidos e seus respectivos processos
+    $aux++;
+    $atualizaOrdem = $connect->prepare(
+        "UPDATE tabpedidos_dia SET ordem = '".$aux."' 
+        WHERE idtabpedidos_dia = ".$dado['idtabpedidos_dia']
+    );
+    $atualizaOrdem->execute();
+
+    $atualizaOrdem2 = $connect->prepare(
+        "UPDATE tabprocessosproduto SET ordem = '".$aux."', escalonado = 0 
+        WHERE idproduto = ".$dado['id_pedido']." AND finalizado = 0 AND
+        (pros_inicial > '".$dataHoje."' OR pros_inicial IS NULL)"
+    );
+    $atualizaOrdem2->execute();
+}
+
+// É AQUI Q ROLA O ESCALONAMENTO DOS PROCESSOS
+
+//sql q pega todos os turnos
+$sql_turnos = $connect->prepare(
+    "SELECT * FROM tabhorariodiario 
+    WHERE (fim > ? AND data = ?) OR (data > ?) 
+    ORDER BY data ASC, inicio ASC"
+);
+$sql_turnos->bind_param("sss", $horaHoje, $diaHoje, $diaHoje);
+$sql_turnos->execute();
+$result_sql_turnos = $sql_turnos->get_result();
+
+// saber se o processo foi dividido e buscar algum lugar no turno q ele aida caiba
+$dividiu_processo = FALSE;
+$escalonou = TRUE;
+
+$cont_teste1 = 1;
+$cont_teste2 = 1;
+
+while($turno = $result_sql_turnos->fetch_assoc()){
+
+    // se n tiver escalonado nenhum no ultimo turno, verifica se tem processo ainda
+    // nao escalonado, se n tiver ele encerra
+    if(!$escalonou) {
+        $sql_verifica_precisa_continuar = $connect->prepare(
+            "SELECT idtabprocessosproduto FROM tabprocessosproduto WHERE escalonado = 0"
+        );
+        $sql_verifica_precisa_continuar->execute();
+        $result_sql_verifica_precisa_continuar = $sql_verifica_precisa_continuar->get_result();
+        if($result_sql_verifica_precisa_continuar->num_rows == 0) break;
+    }
+    $escalonou = FALSE;
+
+    // select q busca as maquinas disponiveis no dia
+    $sql_maquinas_disponiveis = $connect->prepare(
+        "SELECT * FROM tabmaquinasdisponiveis WHERE data = '".$turno["data"]."' 
+        ORDER BY idmaquina ASC"
+    );
+    $sql_maquinas_disponiveis->execute();
     
-    //DIVIDI PROCESSOS >24H PARA ALGUNS DE ATÉ 23H
-    //pega todos os processos q n estejam em andamento
-    $sql = $connect->prepare("SELECT * FROM tabprocessosproduto WHERE finalizado != 1 AND (pros_inicial>='".$date."' OR pros_inicial is NULL)");
-    $sql->execute();
-    $result_sql = $sql->get_result();
+    $result_sql_maquinas_disponiveis = $sql_maquinas_disponiveis->get_result();
 
-    while($dado = $result_sql->fetch_assoc()){
+    $maquinas_disponiveis = [];
+    $maquinas_disponiveis_id = [];
 
-        $horas_total = intval(strstr($dado['tempo'],':', true));
-        $id_sub = 1;
-
-        //verifica se o processo tem mais de 24h para dividir em subprocessos
-        $quant = $horas_total/23;
-
-        if($horas_total>=24 && $quant>0){
-            //aqui ocorre a divisão em subprocessos de até 23h para fazer os calculos
-            while($quant>0){
-                $tempo = '23:00:00';
-
-                if($quant<1){
-                    $tempo = strval($horas_total%23).strstr($dado['tempo'],':');
-                }
-                elseif($quant==1 && strstr($dado['tempo'],':') != ':00:00'){
-                    $tempo = '23'.strstr($dado['tempo'],':');
-                }
-
-                //inserindo os subprocessos na tabela
-                $sql_insert = $connect->prepare("INSERT INTO `tabprocessosproduto`(`idproduto`, `idprocesso`, `id_sub`, `vezes`, `funcionarios`, `tempo`) VALUES (?,?,?,?,?,?)");
-                $sql_insert->bind_param('ssssss', $dado['idproduto'], $dado['idprocesso'], $id_sub, $dado['vezes'], $dado['funcionarios'], $tempo);
-                $sql_insert->execute();
-                $id_sub++;
-                $quant--;
-            }
-
-            //deletando o processo q foi dividido
-            $sql_delete = $connect->prepare("DELETE FROM `tabprocessosproduto` WHERE idtabprocessosproduto = ".$dado['idtabprocessosproduto']);
-            $sql_delete->execute();
-        }
+    // criando array para facilitar nos selects
+    while($maquina = $result_sql_maquinas_disponiveis->fetch_assoc()) {
+        array_push($maquinas_disponiveis, $maquina["idmaquina"]);
+        array_push($maquinas_disponiveis_id, $maquina["idtabmaquinasdisponiveis"]);
     }
 
-    //ENTRADA DE EMERGENCIAL
-    //sql q verifica se tem um emergencial q acabou de chegar
-    $sql_emergencial = mysqli_query($connect, "SELECT * FROM tabpedidos_dia WHERE emergencial = 2 AND data_inicial IS NULL AND ordem IS NULL");
-    $emergencial_rows = mysqli_num_rows($sql_emergencial);
-    if($emergencial_rows > 0){
+    $maquinas_disponiveis_string = implode(",", $maquinas_disponiveis);
 
-        //sql q verifica se estam em um turno em andamento
-        $sql_turno_andamento = mysqli_query($connect, "SELECT * FROM tabhorariodiario WHERE data = '".$date1."' AND inicio <= '".$hora."' AND fim >= '".$hora."'");
-        $turno_an = mysqli_fetch_array($sql_turno_andamento);
-        if($turno_an != NULL){
+    // se tiver alguma maquina disponivel no dia
+    if($maquinas_disponiveis != []) {
+        // select q busca os processos n escalonados com quantidade de funcionarios <=
+        // a quantidade disponivel e q é do processo a qual se tem maquina
+        $sql_processos_adequados = $connect->prepare(
+            "SELECT * FROM tabprocessosproduto WHERE escalonado = 0 AND finalizado = 0
+            AND idprocesso IN (".$maquinas_disponiveis_string.") 
+            AND funcionarios <= ".$turno["funcionario_disponiveis"]." 
+            ORDER BY ordem ASC, idprocesso ASC, idtabprocessosproduto ASC"
+        );
+        $sql_processos_adequados->execute();
+        
+        $result_sql_processos_adequados = $sql_processos_adequados->get_result();
+        
+        // roda todos os processos em busca de escalonamento
+        while($processo = $result_sql_processos_adequados->fetch_assoc()){
+            do{
+                // cria variaveis uteis e depende se o processo foi dividido
+                $tempoHoras = $dividiu_processo ? $novoHoras : $processo["tempoHoras"];
+                $tempoMinutos = $dividiu_processo ? $novoMinutos : $processo["tempoMinutos"];
+                $id = $dividiu_processo ? $novoId : $processo["idtabprocessosproduto"];
+                // declara falso pra n rodar o do while
+                $dividiu_processo = FALSE;
 
-            //sql q pega todos os processos n emergenciais em andamento
-            $sql_andamento = mysqli_query($connect, "SELECT * FROM tabprocessosproduto as a, tabpedidos_dia as b WHERE a.pros_inicial <= '".$date."' AND a.pros_final > '".$date."' AND a.idproduto = b.id_pedido AND b.emergencial < 2");
-            while($processo_an = mysqli_fetch_assoc($sql_andamento)){
-                
-                //cria variaveis para facilitar os calculos - nomes intuitivos
-                $final_intervalo = gmdate('H:i:s', strtotime($turno_an["hora_intervalo"]) + strtotime($turno_an["intervalo"]) - strtotime('03:00:00'));
-                
-                $tempo_pro = strtotime($processo_an["tempo"]) - strtotime('00:00:00');
-                $pros_final = strtotime(strstr($processo_an["pros_final"], " ")) - strtotime('00:00:00');
-                $pros_inicial = strtotime(strstr($processo_an["pros_inicial"], " ")) - strtotime('00:00:00');
-                $inter_final = strtotime($final_intervalo) - strtotime('00:00:00');
-                $inter_inicio = strtotime($turno_an["hora_intervalo"]) - strtotime('00:00:00');
-                $agora = strtotime($hora) - strtotime('00:00:00');
-                
-                //condições para ver em q parte do intervalo esta antes/durante/depois
-                if($turno_an["hora_intervalo"] <= $hora AND $final_intervalo >= $hora){
-                    $tempo_restante = $pros_final - $inter_final;
+                // mais uteis, podem n depende do processo ser dividido
+                $pedido = $processo["idproduto"];
+                $maquina = $processo["idprocesso"];
+                $funcionarios = $processo["funcionarios"];
+                $final_turno = $turno['data']." ".$turno['fim'];
+                $inicio_turno = $turno['data']." ".$turno['inicio'];
+
+                // select q busca os processos escalonados no inicio do turno
+                // para verificar se o processo pode ser escalonado no inicio
+                $sql_verifica_inicio_ocupado = $connect->prepare(
+                    "SELECT sum(funcionarios), SUM(IF(idprocesso = '".$maquina."', 1, 0)) 
+                    as maquinaEmUso FROM tabprocessosproduto WHERE escalonado = 1 AND
+                    pros_inicial = '".$inicio_turno."'"
+                );
+                $sql_verifica_inicio_ocupado->execute();
+                $result_sql_verifica_inicio_ocupado = $sql_verifica_inicio_ocupado->get_result();
+                $verifiva_inicio = $result_sql_verifica_inicio_ocupado->fetch_array();
+
+                // verifica se naquele tempo tem algum processo q deva ser feito antes
+                $sql_busca_processos_menores = $connect->prepare(
+                    "SELECT COUNT(*) FROM tabprocessosproduto 
+                    WHERE (escalonado = 0 AND idproduto = ? AND idprocesso < ?)
+                    OR (escalonado = 1 AND idproduto = ? AND idprocesso < ? AND pros_final > ?)"
+                );
+                $sql_busca_processos_menores->bind_param("iiiis",
+                    $pedido, $maquina, $pedido, $maquina, $inicio_turno
+                );
+                $sql_busca_processos_menores->execute();
+                $result_sql_busca_processos_menores = $sql_busca_processos_menores->get_result();
+                $busca_menor = $result_sql_busca_processos_menores->fetch_array();
+
+                // se puder...
+                if($turno["funcionario_disponiveis"] - $verifiva_inicio[0] >= $funcionarios 
+                    AND $verifiva_inicio[1] == 0 AND $busca_menor[0] == 0) {
+                    $inicio = $inicio_turno;
                 }
-                elseif($hora <= $turno_an["hora_intervalo"]){
-                    $tempo_passado = $agora - $pros_inicial;
-                    $tempo_restante = $tempo_pro - $tempo_passado;
+                else {
+                    // select q busca os processo escalonado e verifica se no seu fim
+                    // tem a maquina necessaria disponivel e quant de funcionarios tbm
+                    $sql_busca_inicio = $connect->prepare(
+                        "SELECT pros_final FROM tabprocessosproduto as a WHERE pros_final < ? 
+                        AND pros_final > ? AND escalonado = 1
+                        AND ((SELECT sum(funcionarios) FROM tabprocessosproduto as b 
+                            WHERE b.pros_inicial <= a.pros_final AND b.pros_final > a.pros_final) <= ? 
+                            OR (SELECT sum(funcionarios) FROM tabprocessosproduto as b 
+                            WHERE b.pros_inicial <= a.pros_final AND b.pros_final > a.pros_final) IS NULL)
+                        AND (SELECT COUNT(*) FROM tabprocessosproduto as c 
+                            WHERE c.pros_inicial <= a.pros_final AND c.pros_final > a.pros_final 
+                            AND idprocesso = ?) < 1 
+                        AND (SELECT COUNT(*) FROM tabprocessosproduto as d
+                             WHERE d.escalonado = 0 AND d.idproduto = ? 
+                             AND d.idprocesso < ?) = 0 
+                        AND (SELECT COUNT(*) FROM tabprocessosproduto as e
+                             WHERE e.escalonado = 1 AND e.idproduto = ? 
+                             AND e.idprocesso < ? AND pros_final > a.pros_final ) = 0
+                        ORDER BY pros_final LIMIT 1"
+                    );
+
+                    
+                    $limite_funcionarios = $turno['funcionario_disponiveis'] - $funcionarios;
+                    $sql_busca_inicio->bind_param("ssiiiiii", 
+                        $final_turno, $inicio_turno, $limite_funcionarios, $maquina,
+                        $pedido, $maquina, $pedido, $maquina
+                    );
+                    $sql_busca_inicio->execute();
+                    $result_sql_busca_inicio = $sql_busca_inicio->get_result();
+                    $busca_inicio = $result_sql_busca_inicio->fetch_array();
+
+                    // se n tiver...
+                    if($busca_inicio == NULL) break;
+
+                    $inicio = $busca_inicio[0];
                 }
-                elseif($hora >= $final_intervalo){
-                    $tempo_restante = $pros_final - $agora;
-                }
 
-                //realiza update 
-                //para os processos q estavam em andamento e os atualizam com o tempo restante e emergencial = 1
-                $tempo_restante_certo = gmdate('H:i:s', $tempo_restante);
+                // select q busca um final onde a quant de funcionarios necessaria ou
+                // a maquina n estão mais disponiveis
+                $sql_busca_final = $connect->prepare(
+                    "SELECT pros_inicial FROM tabprocessosproduto as a WHERE pros_inicial > ? 
+                    AND pros_inicial < ? AND escalonado = 1
+                    AND 
+                    (
+                        (SELECT sum(funcionarios) FROM tabprocessosproduto as b 
+                        WHERE b.pros_inicial <= a.pros_inicial AND b.pros_final > a.pros_inicial) > ?
+                        OR 
+                        (
+                            (SELECT COUNT(*) FROM tabprocessosproduto as c 
+                            WHERE c.pros_inicial <= a.pros_inicial AND c.pros_final > a.pros_inicial 
+                            AND idprocesso = ?) IS NOT NULL
+                            AND (SELECT COUNT(*) FROM tabprocessosproduto as c 
+                            WHERE c.pros_inicial <= a.pros_inicial AND c.pros_final > a.pros_inicial 
+                            AND idprocesso = ?) > 0
+                        )
+                    ) 
+                    ORDER BY pros_final LIMIT 1"
+                );
 
-                $sql_update_andamento = $connect->prepare("UPDATE tabprocessosproduto SET tempo = '".$tempo_restante_certo."', escalonado = 0, pros_inicial = NULL WHERE idtabprocessosproduto = ".$processo_an["idtabprocessosproduto"]);
-                $sql_update_andamento->execute();
-                $sql_update_andamento_emer = $connect->prepare("UPDATE tabpedidos_dia SET emergencial = 1 WHERE id_pedido = ".$processo_an["idproduto"]);
-                $sql_update_andamento_emer->execute();
-            }
-        }
-    }
-    
-    //ORDENAÇÃO
-    //ordena todos os pedidos de acordo com o peso e da a ordenação para os processos
-    //sql q pega todos os pedidos pelo a prioridade exigida
-    $aux=0;
-    $sql = mysqli_query($connect, "select * from tabpedidos_dia where data_final > '".$date."' OR data_final is null OR data_final = '0000-00-00 00:00:00' order by emergencial DESC, peso DESC, data ASC");
-    while($dado = mysqli_fetch_assoc($sql)){
+                $sql_busca_final->bind_param("ssiii", 
+                    $inicio, $final_turno, $limite_funcionarios, $maquina, $maquina
+                );
+                $sql_busca_final->execute();
+                $result_sql_busca_final = $sql_busca_final->get_result();
+                $busca_final = $result_sql_busca_final->fetch_array();
 
-        //da a ordem para os pedidos e seus respectivos processos
-        $aux++;
-        $atualizaOrdem = $connect->prepare("UPDATE tabpedidos_dia SET ordem = ".$aux." WHERE idtabpedidos_dia=".$dado['idtabpedidos_dia']);
-        $atualizaOrdem->execute();
-        $atualizaOrdem2 = $connect->prepare("UPDATE tabprocessosproduto SET ordem = ".$aux.", escalonado = 0 WHERE idproduto=".$dado['id_pedido']." AND (pros_inicial > '".$date."' OR pros_inicial IS NULL)");
-        $atualizaOrdem2->execute();
-    }
+                // se n tiver o fim é o final do turno
+                if($busca_final == NULL) $final = $final_turno;
+                else $final = $busca_final[0];
 
-    //pegar dados da data de hj de diferentes formas
-    date_default_timezone_set('America/Sao_Paulo');
-    $datehora = date('Y-m-d H:i:s');
-    $date = date('Y-m-d');
-    $hora = date('H:i:s');
+                // aqui atualiza os processos e cria novos se necessario
+                if($inicio != NULL AND $final != NULL) {
+                    // var autoexplicativas para facilitar
+                    $vezes = $processo["vezes"];
+                    $ordem = $processo["ordem"];
+                    $idMaquina = $maquinas_disponiveis_id[array_search($maquina, $maquinas_disponiveis)];
 
+                    $horaIntervalo = $turno["hora_intervalo"];
+                    $horaIntervalo_array = explode(':', $turno["hora_intervalo"]);
+                    $tempoIntervalo_array = explode(':', $turno["intervalo"]);
+                    $horaIntervaloInt = $horaIntervalo_array[0]*60 + $horaIntervalo_array[1];
+                    $horaFinalIntervaloInt = $horaIntervaloInt + ($tempoIntervalo_array[0]*60 + $tempoIntervalo_array[1]);
 
-    // É AQUI Q ROLA O ESCALONAMENTO DOS PROCESSOS
+                    $horaInicio = strstr($inicio, ' ');
+                    $horaFinal = strstr($final, ' ');
+                    $inicio_array = explode(':', $horaInicio);
+                    $final_array = explode(':', $horaFinal);
+                    $horaInicioInt = $inicio_array[0]*60 + $inicio_array[1];
+                    $horaFinalInt = $final_array[0]*60 + $final_array[1];
 
-    //sql q pega todos os turnos
-    $sql_turnos = $connect->prepare("SELECT * FROM tabhorariodiario WHERE (fim > ? AND data = ?) OR (data > ?) ORDER BY data ASC, inicio ASC");
-    $sql_turnos->bind_param("sss", $hora, $date, $date);
-    $sql_turnos->execute();
-    $result_sql_turnos = $sql_turnos->get_result();
+                    $tempo_disponivel = ($final_array[0]*60 + $final_array[1]) - 
+                        ($inicio_array[0]*60 + $inicio_array[1]);
 
-    $continua = TRUE;
+                    // verifica se o inicio e fim estão entre o intervalo
+                    if($horaInicioInt < $horaIntervaloInt AND $horaFinalInt > $horaIntervaloInt)
+                        $tempo_disponivel -= ($tempoIntervalo_array[0]*60 + $tempoIntervalo_array[1]); 
 
-    $cont_teste1 = 1;
-    $cont_teste2 = 1;
-    while($turno = $result_sql_turnos->fetch_assoc()){
-        do{
-            //variaveis auxiliares
-            $continua = FALSE;
-            $aux_id_processo = NULL;
-            
-            //sql q pega os processos adequados para realizar no turno em questão
-            $sql_processos_adequados = $connect->prepare("SELECT * FROM tabprocessosproduto, tabmaquinasdisponiveis, tabhorariodiario 
-                                            WHERE tabprocessosproduto.idprocesso = tabmaquinasdisponiveis.idmaquina AND tabprocessosproduto.escalonado = 0 
-                                            AND tabmaquinasdisponiveis.data = ? AND tabhorariodiario.idtabhorariodiario = ? 
-                                            AND tabhorariodiario.funcionario_disponiveis>=tabprocessosproduto.funcionarios ORDER BY tabprocessosproduto.ordem ASC, 
-                                            tabprocessosproduto.idprocesso ASC, tabprocessosproduto.id_sub ASC, tabprocessosproduto.idtabprocessosproduto ASC");
-            $sql_processos_adequados->bind_param("ss", $turno['data'], $turno['idtabhorariodiario']);
-            $sql_processos_adequados->execute();
-            echo json_encode(array("teste" => 1));
-            $result_sql_processos_adequados = $sql_processos_adequados->get_result();
-            
-            while($processo = $result_sql_processos_adequados->fetch_assoc()){
-                echo json_encode(array("teste" => 2));
-                // nn deixa q o processo seja escalonado novamente
-                if($aux_id_processo != $processo["idtabprocessosproduto"]){
-                    echo json_encode(array("teste" => 3));
-                    $aux_id_processo = $processo["idtabprocessosproduto"];
+                    // se o tempo disponivel for exatamente oq precisa...
+                    if($tempo_disponivel == ($tempoHoras*60 + $tempoMinutos)) {
+                        // atualiza o processo
+                        $sql_update_processo = $connect->prepare(
+                            "UPDATE tabprocessosproduto SET escalonado = 1, idmaquina = ?,
+                            pros_inicial = ?, pros_final = ? 
+                            WHERE idtabprocessosproduto = ? "
+                        );
+                        $sql_update_processo->bind_param("issi", 
+                            $idMaquina, $inicio, $final, $id
+                        );
+                        $sql_update_processo->execute();
 
-                    //sql q busca todos os processos já escalonados no turno
-                    $inicio_turno = NULL;
-                    $inicial_teste = $turno["data"]." ".$turno["inicio"];
-                    $final_teste = $turno["data"]." ".$turno["fim"];
-
-                    $sql_processos_no_turno_code = "SELECT * FROM tabprocessosproduto WHERE escalonado = 1 AND pros_inicial >= '".$turno["data"]." ".$turno["inicio"]."' AND pros_final <= '".$turno['data']." ".$turno['fim']."' ORDER BY pros_final ASC";
-
-                    if($turno["data"] == $date){
-                        $sql_processos_no_turno_code = "SELECT * FROM tabprocessosproduto WHERE escalonado = 1 AND pros_inicial >= '".$turno["data"]." ".$turno["inicio"]."' AND pros_final <= '".$turno["data"]." ".$turno["fim"]."' AND pros_final >= '".date('Y-m-d H:i:s')."' ORDER BY pros_final ASC";
+                        $escalonou = TRUE;
+                        $dividiu_processo = FALSE;
                     }
+                    // se for menor...
+                    else if($tempo_disponivel < ($tempoHoras*60 + $tempoMinutos)) {
+                        // atualiza o processo e cria outro com o tempo restante
+                        $updateHoras = floor($tempo_disponivel/60);
+                        $updateMinutos = $tempo_disponivel%60;
+                        $updateTempo = (floor($tempo_disponivel/60)).":".($tempo_disponivel%60).":0";
+                        
+                        $sql_update_processo = $connect->prepare(
+                            "UPDATE tabprocessosproduto SET escalonado = 1, idmaquina = ?,
+                            pros_inicial = ?, pros_final = ?, tempoHoras = ?, tempoMinutos = ?,
+                            tempo = ? WHERE idtabprocessosproduto = ? "
+                        );
+                        $sql_update_processo->bind_param("sssssss", 
+                            $idMaquina, $inicio, $final, $updateHoras, $updateMinutos,
+                            $updateTempo, $id
+                        );
+                        $sql_update_processo->execute();
 
-                    $sql_processos_no_turno = $connect->prepare($sql_processos_no_turno_code);                    
-                    $sql_processos_no_turno->execute();
-                    
 
-                    $result_sql_processos_no_turno = $sql_processos_no_turno->get_result();
-                    
-                    //inicializando as variaveis como null para cada processo
-                    $inicio = NULL;
-                    $fim = NULL;
-                    $liberada = NULL;
-                    $naopara = FALSE;
+                        $novoProcessoTempo = ($tempoHoras*60 + $tempoMinutos) - $tempo_disponivel; 
+                        $novoTempo = (floor($novoProcessoTempo/60)).":".($novoProcessoTempo%60).":0";
+                        $novoMinutos = $novoProcessoTempo%60;
+                        $novoHoras = floor($novoProcessoTempo/60);
+                        $sql_insert_subprocesso = $connect->prepare(
+                            "INSERT INTO `tabprocessosproduto`
+                            (`idproduto`, `idprocesso`, `vezes`, `funcionarios`, `tempo`, 
+                            `tempoHoras`, `tempoMinutos`, `ordem`) 
+                            VALUES (?,?,?,?,?,?,?,?)"
+                        );
+                        $sql_insert_subprocesso->bind_param('iiiisiii', 
+                            $pedido, $maquina, $vezes, $funcionarios, $novoTempo, 
+                            $novoHoras, $novoMinutos, $ordem
+                        );
+                        $sql_insert_subprocesso->execute();
+                        $novoId = $connect->insert_id;
 
-                    //vai rodar até ele achar um inicio e fim de tempo em q ele é aceitado
-                    while($final = $result_sql_processos_no_turno->fetch_assoc()){
-                        echo json_encode(array("teste" => 4));
-                        //verifica por onde deve começar a buscar se é aceitável começar o processo
-                        //se n começou o turno ainda
-                        //se já comecou um turno/se estam em horario de intevalo ou se esta no final de um processo
-                        if($turno["data"] == $date){
-                            echo json_encode(array("teste" => 5));
-                            if($inicio_turno == NULL AND $turno["inicio"] > $hora){
-                                $inicio_turno = $turno["inicio"];
-                            }
-                            elseif($inicio_turno == NULL){
-                                $fim_intervalo = gmdate('H:i:s', strtotime($turno["hora_intervalo"]) + strtotime($turno["intervalo"]) - strtotime('03:00:00'));
-                                if($hora >= $turno["hora_intervalo"] AND $hora <$fim_intervalo){
-                                    $inicio_turno = $fim_intervalo;
-                                }
-                                else{
-                                    $inicio_turno = $hora;
-                                }
-                            }
-                            else{
-                                $inicio_turno = gmdate('H:i:s',strtotime(strstr($final["pros_final"],' '))-strtotime('00:00:00'));
-                            }
-                        }
-                        else{
-                            echo json_encode(array("teste" => 6));
-                            if($inicio_turno == NULL){
-                                $inicio_turno = $turno["inicio"];
-                            }
-                            else{
-                                $inicio_turno = gmdate('H:i:s',strtotime(strstr($final["pros_final"],' '))-strtotime('00:00:00'));
-                            }
-                        }
-                        echo json_encode(array("teste" => 7));
-                        //verifica se a compatível com as condições seguintes e até quando
-                        //primeiro verifica se tem os funcionarios necessários
-                        $data_inicio_turno = $turno["data"]." ".$inicio_turno;
-                        $sql_funcionarios_usando = $connect->prepare("SELECT sum(funcionarios) FROM tabprocessosproduto 
-                                                                        WHERE pros_inicial <= ? AND pros_final > ? AND escalonado = 1");
-                        $sql_funcionarios_usando->bind_param("ss", $data_inicio_turno, $data_inicio_turno);
-                        $sql_funcionarios_usando->execute();
-                        $result_sql_funcionarios_usando = $sql_funcionarios_usando->get_result();
-
-                        $funcionarios_usados = $result_sql_funcionarios_usando->fetch_array();
-
-                        //se a quantidade for a necessária
-                        if($turno["funcionario_disponiveis"] - $funcionarios_usados["sum(funcionarios)"] >= $processo["funcionarios"]){
-                            echo json_encode(array("teste" => 8));
-                            //depois verifica se tem a maquina necessária
-                            //se estiver proucurando até onde esta liberada
-                            if($liberada!=NULL){
-                                echo json_encode(array("teste" => 9));
-                                //sql q verifica se tem algum processo utilizando da maquina necessaria nesse momento para dar um fim
-                                $data_inicio_turno = $turno["data"]." ".$inicio_turno;
-                                $sql_verifica_uso = $connect->prepare("SELECT * FROM tabprocessosproduto WHERE escalonado = 1 AND idmaquina = ? 
-                                                                        AND pros_inicial <= ? AND pros_final > ?");
-                                $sql_verifica_uso->bind_param("sss", $liberada, $data_inicio_turno, $data_inicio_turno);
-                                $sql_verifica_uso->execute();
-                                $result_sql_verifica_uso = $sql_verifica_uso->get_result();
-
-                                if($result_sql_verifica_uso->num_rows > 0){
-                                    $aux_maquina = $liberada;
-                                    $liberada = NULL;
-                                }
-                            }
-
-                            //se tiver procurando qual maquina esta disponivel
-                            else{
-                                echo json_encode(array("teste" => 10));
-                                //sql q ver quais maquinas q ele possa usar q estão disponíveis no dia
-                                $sql_oferta_maquina = $connect->prepare("SELECT * FROM tabmaquinasdisponiveis WHERE idmaquina = ? AND data = ?");
-                                $sql_oferta_maquina->bind_param("is", $processo['idprocesso'], $turno['data']);
-                                $sql_oferta_maquina->execute();
-                                $result_sql_oferta_maquina = $sql_oferta_maquina->get_result();
-
-                                while($maquina = $result_sql_oferta_maquina->fetch_assoc()){
-                                    //sql q verifica se tem alguem usando naquele momento
-                                    $data_inicio_turno = $turno["data"]." ".$inicio_turno;
-                                    $sql_verifica_uso = $connect->prepare("SELECT * FROM tabprocessosproduto WHERE escalonado = 1 
-                                                                            AND idmaquina = ? AND pros_inicial <= ? AND pros_final > ?");
-                                    $sql_verifica_uso->bind_param("iss", $maquina["idtabmaquinasdisponiveis"], $data_inicio_turno, $data_inicio_turno);
-                                    $result_sql_verifica_uso = $sql_verifica_uso->get_result();
-
-                                    //verifica entre as maquinas possiveis se alguma n esta sendo usada
-                                    if($result_sql_verifica_uso->num_rows == 0){
-                                        $liberada = $maquina["idtabmaquinasdisponiveis"];
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-
-                        //verifica se todos os processos do pedido q deveriam ser feitos antes dele já foram feito
-                        $data_inicio_turno = $turno["data"]." ".$inicio_turno;
-                        $sql_verifica_preparo = $connect->prepare("SELECT * FROM tabprocessosproduto WHERE idproduto = ? AND idprocesso < ? 
-                                                                    AND (escalonado = 0 or (escalonado = 1 AND pros_final > ?))");
-                        $sql_verifica_preparo->bind_param("iis", $processo["idproduto"], $processo["idprocesso"], $data_inicio_turno);
-                        $sql_verifica_preparo->execute();
-                        $result_sql_verifica_preparo = $sql_verifica_preparo->get_result();
-                        echo json_encode(array("teste" => 11));
-                        //se ele tiver achado e foi a primeira vez e os processos necessários já foram realizados, ele declara como inicio
-                        if($liberada != NULL AND $inicio == NULL AND $inicio_turno < $turno["fim"] AND $result_sql_verifica_preparo->num_rows == 0){
-                            $inicio = $inicio_turno;
-                            $naopara = FALSE;
-                        }
-                        //se n fora primeira vez ele declara como o fim
-                        else if($liberada != NULL AND $inicio != NULL){
-                            $fim = $inicio_turno;
-                            $naopara = TRUE;
-                        }
-                        //se ele já tiver achado um inicio e um fim ele sai do do_while
-                        else if($liberada == NULL AND $inicio != NULL){
-                            $liberada = $aux_maquina;
-                            $naopara = FALSE;
-                            $fim = $inicio_turno;
-                            break;
-                        }
+                        // para q possa rodar o do while e verificar se o novo cabe no turno
+                        $dividiu_processo = TRUE;
+                        $escalonou = TRUE;
                     }
-                    
-                    //se tiver encontrado um horarios mas n um final, significa q ele tem até o final do turno
-                    if(($inicio != NULL AND $fim == NULL AND $inicio != $turno["fim"]) OR ($inicio != NULL AND $naopara)){
-                        $fim = $turno["fim"];
-                    }
+                    // se for maior...
+                    else {
+                        // atualiza o final até quando ele precisa e depois atualiza processo
+                        $tempoProcesso = $tempoHoras*60 + $tempoMinutos;
+                        $tempoAMais = $tempo_disponivel - $tempoProcesso;
+                        $finalInt = ($final_array[0]*60 + $final_array[1]) - $tempoAMais;
 
-                    //se ele tiver encontrado um tempo para se executar
-                    if($inicio != NULL and $fim != NULL){
-                        echo json_encode(array("teste" => 12));
-                        //cria variáveis para facilitar os calculos - nomes intuitivos
-                        $inicio_conta = strtotime($inicio);
-                        $fim_conta = strtotime($fim);
-                        $intervalo = strtotime($turno["hora_intervalo"]);
-                        $tempo_intervalo = strtotime($turno["intervalo"]) - strtotime('00:00:00');
-                        $calculo = gmdate('H:i:s', $fim_conta-$inicio_conta);
-                        $tempo_conta = strtotime($processo["tempo"]) - strtotime('00:00:00');
-
-                        //se do inicio até o fim passa pelo intervalo então ele retira o intervalo do tempo disponível
-                        if($inicio_conta <= $intervalo AND $fim_conta > $intervalo){
-                            $calculo = gmdate('H:i:s', $fim_conta-$inicio_conta-$tempo_intervalo);
+                        // verifiva se o final do processo e menor q o final do intervalo
+                        // para reduzir o tempo do intervalo
+                        if($finalInt < $horaFinalIntervaloInt) {
+                            $finalInt -= ($tempoIntervalo_array[0]*60 + $tempoIntervalo_array[1]);
                         }
                         
-                        //verifica se o tempo disponível encontrado é suficiente para concluir o processo
-                        if($calculo >= $processo["tempo"]){
+                        $finalHora = (floor($finalInt/60)).":".($finalInt%60).":0";
+                        $final = $turno["data"]." ".$finalHora;
 
-                            //processo tem inicio em $inicio e fim até quando precisar
-                            $final_update = gmdate('H:i:s', $inicio_conta + $tempo_conta - strtotime("00:00:00"));
 
-                            //se o inicio e o fim passarem pelo intervalo temos q adicionar o intercalo no tempo final
-                            if($final_update > $turno["hora_intervalo"] AND $inicio <= $turno["hora_intervalo"]){
-                                $tempo_conta += $tempo_intervalo;
-                                $final_update = gmdate('H:i:s', $inicio_conta + $tempo_conta - strtotime("00:00:00"));
-                            }
+                        $sql_update_processo = $connect->prepare(
+                            "UPDATE tabprocessosproduto SET escalonado = 1, idmaquina = ?,
+                            pros_inicial = ?, pros_final = ? 
+                            WHERE idtabprocessosproduto = ? "
+                        );
+                        $sql_update_processo->bind_param("ssss", 
+                            $idMaquina, $inicio, $final, $id
+                        );
+                        $sql_update_processo->execute();
 
-                            //update do processo com seu inicio, fim, maquina utilizada e declarado como escalonado
-                            $data_inicio_turno = $turno["data"]." ".$inicio;
-                            $data_final_turno = $turno["data"]." ".$final_update;
-                            $sql_update_processo = $connect->prepare("UPDATE tabprocessosproduto SET escalonado = 1, idmaquina = ?,
-                                pros_inicial = ?, pros_final = ? WHERE idtabprocessosproduto = ? ");
-                            $sql_update_processo->bind_param("issi", $liberada, $data_inicio_turno, $data_final_turno, $processo["idtabprocessosproduto"]);
-                            $sql_update_processo->execute();
-                            echo json_encode(array("teste" => 13));
-                        }
-                        else{
-                            echo json_encode(array("teste" => 14));
-                            //dividi em dois sub processos, um com o tempo máximo e outro com restante
-
-                            //verifica o tempo disponível q encontrou
-                            $tempo_disponivel = $fim_conta - $inicio_conta;
-
-                            //se passar pelo intervalo tira o intercalo do tempo disponível
-                            if($inicio_conta<=$intervalo AND $fim_conta>$intervalo){
-                                $tempo_disponivel -= $tempo_intervalo;
-                            }
-
-                            //atribui as variáveis com o tempo novo dos dois subprocessos
-                            $novo_tempo_time = $tempo_conta - $tempo_disponivel;
-                            $antigo_novo_time = $tempo_conta - $novo_tempo_time;
-                            $antigo_novo = gmdate('H:i:s', $antigo_novo_time);
-                            $novo_tempo = gmdate('H:i:s', $novo_tempo_time);
-
-                            //da um update no processo original para dar o tempo novo, inicio, fim, idmaquina e declara escalonado
-                            $data_inicio_turno = $turno["data"]." ".$inicio;
-                            $data_final_turno = $turno["data"]." ".$fim;
-                            $sql_update_processo = $connect->prepare("UPDATE tabprocessosproduto SET escalonado = 1, idmaquina = ?,
-                                pros_inicial = ?, pros_final = ?, tempo = ? WHERE idtabprocessosproduto = ?");
-                            $sql_update_processo->bind_param("isssi", $liberada, $data_inicio_turno, $data_final_turno, $antigo_novo, $processo["idtabprocessosproduto"]);
-                            $sql_update_processo->execute();
-                            
-                            //cria o sub processo com os mesmos valores do original porem o com o tempo q falta
-                            $sql_insert_subprocesso = $connect->prepare("INSERT INTO `tabprocessosproduto`(`idproduto`, `id_sub`, `idprocesso`, `vezes`, `funcionarios`, `tempo`, `ordem`) VALUES (?,?,?,?,?,?,?)");
-                            $sql_insert_subprocesso->bind_param('sssssss', $processo['idproduto'], $processo['id_sub'], $processo['idprocesso'], $processo['vezes'], $processo['funcionarios'], $novo_tempo, $processo['ordem']);
-                            $sql_insert_subprocesso->execute();
-
-                            $continua = TRUE;
-                            break;
-                        }
+                        $escalonou = TRUE;
+                        $dividiu_processo = FALSE;
                     }
                 }
-                $cont_teste2++;
-            }
-        }while($continua);
-        $cont_teste1++;
-    }
 
-    //ATUALIZA DATA INICIAL E FINAL DOS PEDIDOS
-    //pesquisar todoas os pedidos q n estao em andamento
-    $sql_pedidos = mysqli_query($connect, "SELECT * FROM tabpedidos_dia");
-    
-    //aqui realiza a parte de atualiza os dados dos pedidos com os horários certos - inicio e fim
-    while($pedido = mysqli_fetch_assoc($sql_pedidos)){
+                $inicio = NULL;
+                $final = NULL;
 
-        //se o pedido n tiver iniciado ele atualiza o inicio e o fim
-        if($pedido["data_inicial"]>$datehora OR $pedido["data_inicial"]==NULL OR $pedido["data_inicial"]=="0000-00-00 00:00:00"){
-            
-            //SQLs q pega a menor data inicial e maior data final entre os processos do pedido
-            $sql_inicial = mysqli_query($connect, "SELECT * FROM tabprocessosproduto WHERE idproduto = ".$pedido['id_pedido']." ORDER BY pros_inicial ASC");
-            $inicio = mysqli_fetch_array($sql_inicial);
-            $sql_final = mysqli_query($connect, "SELECT * FROM tabprocessosproduto WHERE idproduto = ".$pedido['id_pedido']." ORDER BY pros_final DESC");
-            $fim = mysqli_fetch_array($sql_final);
-
-            if($inicio != NULL){
-                if($inicio['pros_inicial'] == NULL){
-                    $sql_update_pedido = $connect->prepare("UPDATE `tabpedidos_dia` SET `data_inicial`='0000-00-00 00:00:00',`data_final`='0000-00-00 00:00:00' WHERE id_pedido = ".$pedido['id_pedido']);
-                    //$sql_update_previsao_tabpedido = $connect->prepare("UPDATE tabpedido SET previsao = '0000-00-00 00:00:00' WHERE idpedido = ".$pedido['id_pedido']." AND statuspedido != 1");
-                }
-                else{
-                    $sql_update_pedido = $connect->prepare("UPDATE `tabpedidos_dia` SET `data_inicial`='".$inicio['pros_inicial']."',`data_final`='".$fim['pros_final']."' WHERE id_pedido = ".$pedido['id_pedido']);
-                    $sql_update_previsao_tabpedido = $connect->prepare("UPDATE tabpedido SET previsao = '".$fim['pros_final']."' WHERE idpedido = ".$pedido['id_pedido']." AND statuspedido != 1");
-                }
-    
-                //da um update com esse dados
-                $sql_update_pedido->execute();
-                $sql_update_previsao_tabpedido->execute();
-            }
-            
-        }
-
-        //se n atualiza só o final
-        else{
-
-            //SQL q pega a maior data final entre os processos do pedido
-            $sql_inicial = mysqli_query($connect, "SELECT * FROM tabprocessosproduto WHERE idproduto = ".$pedido['id_pedido']." ORDER BY pros_inicial ASC");
-            $inicio = mysqli_fetch_array($sql_inicial);
-            $sql_final = mysqli_query($connect, "SELECT * FROM tabprocessosproduto WHERE idproduto = ".$pedido['id_pedido']." ORDER BY pros_final DESC");
-            $fim = mysqli_fetch_array($sql_final);
-
-            if($inicio != NULL){
-                if($inicio['pros_inicial'] == NULL){
-                    $sql_update_pedido = $connect->prepare("UPDATE `tabpedidos_dia` SET `data_final`='0000-00-00 00:00:00' WHERE id_pedido = ".$pedido['id_pedido']);
-                    //$sql_update_previsao_tabpedido = $connect->prepare("UPDATE tabpedido SET previsao = '0000-00-00 00:00:00' WHERE idpedido = ".$pedido['id_pedido']." AND statuspedido != 1");
-                }
-                else{
-                    $sql_update_pedido = $connect->prepare("UPDATE `tabpedidos_dia` SET `data_final`='".$fim['pros_final']."' WHERE id_pedido = ".$pedido['id_pedido']);
-                    $sql_update_previsao_tabpedido = $connect->prepare("UPDATE tabpedido SET previsao = '".$fim['pros_final']."' WHERE idpedido = ".$pedido['id_pedido']." AND statuspedido != 1");
-                }
-    
-                //da um update com esse dado
-                $sql_update_pedido->execute();
-                $sql_update_previsao_tabpedido->execute();
-            }
+            }while($dividiu_processo AND $escalonou);
         }
     }
+}
+
+//ATUALIZA DATA INICIAL E FINAL DOS PEDIDOS
+//pesquisar todoas os pedidos q n estao em andamento
+$sql_pedidos = mysqli_query($connect, "SELECT * FROM tabpedidos_dia");
+
+//aqui realiza a parte de atualiza os dados dos pedidos com os horários certos - inicio e fim
+while($pedido = mysqli_fetch_assoc($sql_pedidos)){
+
+    //se o pedido n tiver iniciado ele atualiza o inicio e o fim
+    if($pedido["data_inicial"]>$dataHoje OR $pedido["data_inicial"]==NULL OR $pedido["data_inicial"]=="0000-00-00 00:00:00"){
+        
+        //SQLs q pega a menor data inicial e maior data final entre os processos do pedido
+        $sql_inicial = mysqli_query($connect, "SELECT * FROM tabprocessosproduto WHERE idproduto = ".$pedido['id_pedido']." ORDER BY pros_inicial ASC");
+        $inicio = mysqli_fetch_array($sql_inicial);
+        $sql_final = mysqli_query($connect, "SELECT * FROM tabprocessosproduto WHERE idproduto = ".$pedido['id_pedido']." ORDER BY pros_final DESC");
+        $fim = mysqli_fetch_array($sql_final);
+
+        if($inicio != NULL){
+            if($inicio['pros_inicial'] == NULL){
+                $sql_update_pedido = $connect->prepare("UPDATE `tabpedidos_dia` SET `data_inicial`='0000-00-00 00:00:00',`data_final`='0000-00-00 00:00:00' WHERE id_pedido = ".$pedido['id_pedido']);
+                $sql_update_previsao_tabpedido = $connect->prepare("UPDATE tabpedido SET previsao = '0000-00-00 00:00:00' WHERE idpedido = ".$pedido['id_pedido']." AND statuspedido != 1");
+            }
+            else{
+                $sql_update_pedido = $connect->prepare("UPDATE `tabpedidos_dia` SET `data_inicial`='".$inicio['pros_inicial']."',`data_final`='".$fim['pros_final']."' WHERE id_pedido = ".$pedido['id_pedido']);
+                $sql_update_previsao_tabpedido = $connect->prepare("UPDATE tabpedido SET previsao = '".$fim['pros_final']."' WHERE idpedido = ".$pedido['id_pedido']." AND statuspedido != 1");
+            }
+
+            //da um update com esse dados
+            $sql_update_pedido->execute();
+            $sql_update_previsao_tabpedido->execute();
+        }
+        
+    }
+
+    //se n atualiza só o final
+    else{
+
+        //SQL q pega a maior data final entre os processos do pedido
+        $sql_inicial = mysqli_query($connect, "SELECT * FROM tabprocessosproduto WHERE idproduto = ".$pedido['id_pedido']." ORDER BY pros_inicial ASC");
+        $inicio = mysqli_fetch_array($sql_inicial);
+        $sql_final = mysqli_query($connect, "SELECT * FROM tabprocessosproduto WHERE idproduto = ".$pedido['id_pedido']." ORDER BY pros_final DESC");
+        $fim = mysqli_fetch_array($sql_final);
+
+        if($inicio != NULL){
+            if($inicio['pros_inicial'] == NULL){
+                $sql_update_pedido = $connect->prepare("UPDATE `tabpedidos_dia` SET `data_final`='0000-00-00 00:00:00' WHERE id_pedido = ".$pedido['id_pedido']);
+                $sql_update_previsao_tabpedido = $connect->prepare("UPDATE tabpedido SET previsao = '0000-00-00 00:00:00' WHERE idpedido = ".$pedido['id_pedido']." AND statuspedido != 1");
+            }
+            else{
+                $sql_update_pedido = $connect->prepare("UPDATE `tabpedidos_dia` SET `data_final`='".$fim['pros_final']."' WHERE id_pedido = ".$pedido['id_pedido']);
+                $sql_update_previsao_tabpedido = $connect->prepare("UPDATE tabpedido SET previsao = '".$fim['pros_final']."' WHERE idpedido = ".$pedido['id_pedido']." AND statuspedido != 1");
+            }
+
+            //da um update com esse dado
+            $sql_update_pedido->execute();
+            $sql_update_previsao_tabpedido->execute();
+        }
+    }
+}
 
 ?>
